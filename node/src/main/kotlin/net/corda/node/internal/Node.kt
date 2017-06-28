@@ -252,6 +252,7 @@ open class Node(override val configuration: FullNodeConfiguration,
      * Insert an initial step in the registration process which will throw an exception if a non-recoverable error is
      * encountered when trying to connect to the network map node.
      */
+    // TODO add possibility to run with network map from DB
     override fun registerWithNetworkMap(): ListenableFuture<Unit> {
         val networkMapConnection = messageBroker?.networkMapConnectionFuture ?: Futures.immediateFuture(Unit)
         return networkMapConnection.flatMap { super.registerWithNetworkMap() }
