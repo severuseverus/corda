@@ -5,7 +5,6 @@ import net.corda.core.contracts.ContractState
 import net.corda.core.contracts.FungibleAsset
 import net.corda.core.contracts.LinearState
 import net.corda.core.schemas.MappedSchema
-import net.corda.core.schemas.NodeInfoSchema
 import net.corda.core.schemas.NodeInfoSchemaV1
 import net.corda.core.schemas.PersistentState
 import net.corda.core.schemas.QueryableState
@@ -31,8 +30,8 @@ class NodeSchemaService(customSchemas: Set<MappedSchema> = emptySet()) : SchemaS
     // For example, cash is used by the vault for coin selection (but will be extracted as a standalone CorDapp in future)
     val requiredSchemas: Map<MappedSchema, SchemaService.SchemaOptions> =
             mapOf(Pair(CashSchemaV1, SchemaService.SchemaOptions()),
-                  Pair(CommonSchemaV1, SchemaService.SchemaOptions()),
-                  Pair(VaultSchemaV1, SchemaService.SchemaOptions()),
+                    Pair(CommonSchemaV1, SchemaService.SchemaOptions()),
+                    Pair(VaultSchemaV1, SchemaService.SchemaOptions()),
                     Pair(NodeInfoSchemaV1, SchemaService.SchemaOptions()))
 
     override val schemaOptions: Map<MappedSchema, SchemaService.SchemaOptions> = requiredSchemas.plus(customSchemas.map {
