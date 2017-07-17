@@ -5,6 +5,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import net.corda.core.crypto.SecureHash
 import net.corda.core.flows.FlowInitiator
 import net.corda.core.flows.FlowLogic
+import net.corda.core.flows.StackDump
 import net.corda.core.flows.StateMachineRunId
 import net.corda.core.identity.Party
 import net.corda.core.node.ServiceHub
@@ -33,6 +34,9 @@ interface FlowStateMachine<R> {
     fun checkFlowPermission(permissionName: String, extraAuditData: Map<String,String>)
 
     fun recordAuditEvent(eventType: String, comment: String, extraAuditData: Map<String,String>)
+
+    @Suspendable
+    fun debugStackDump(): StackDump
 
     val serviceHub: ServiceHub
     val logger: Logger
