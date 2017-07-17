@@ -7,7 +7,10 @@ import net.corda.core.contracts.Issued
 import net.corda.core.contracts.StateAndRef
 import net.corda.core.crypto.DigitalSignature
 import net.corda.core.crypto.SecureHash
+import net.corda.core.crypto.toStringShort
 import net.corda.core.flows.*
+import net.corda.core.identity.AbstractParty
+import net.corda.core.identity.AnonymousPartyAndPath
 import net.corda.core.identity.Party
 import net.corda.core.node.ServiceHub
 import net.corda.core.node.services.Vault
@@ -20,15 +23,16 @@ import net.corda.core.utilities.unwrap
 import java.util.*
 
 @CordaSerializable
-private data class FxRequest(val tradeId: String,
-                             val amount: Amount<Issued<Currency>>,
-                             val owner: Party,
-                             val counterparty: Party,
-                             val notary: Party? = null)
+data class FxRequest(val tradeId: String,
+                     val amount: Amount<Issued<Currency>>,
+                     val owner: Party,
+                     val counterparty: Party,
+                     val notary: Party? = null)
 
 @CordaSerializable
-private data class FxResponse(val inputs: List<StateAndRef<Cash.State>>,
-                              val outputs: List<Cash.State>)
+data class FxResponse(val inputs: List<StateAndRef<Cash.State>>,
+                      val identities: List<AnonymousPartyAndPath>,
+                      val outputs: List<Cash.State>)
 
 // DOCSTART 1
 // This is equivalent to the VaultService.generateSpend
@@ -81,42 +85,60 @@ private fun prepareOurInputsAndOutputs(serviceHub: ServiceHub, request: FxReques
     val (inputs, residual) = gatherOurInputs(serviceHub, sellAmount, request.notary)
 
     // Build and an output state for the counterparty
-    val transferedFundsOutput = Cash.State(sellAmount, request.counterparty)
+    val transferredFundsOutput = Cash.State(sellAmount, request.counterparty)
 
-    if (residual > 0L) {
+    val residualOutput = if (residual > 0L) {
         // Build an output state for the residual change back to us
         val residualAmount = Amount(residual, sellAmount.token)
-        val residualOutput = Cash.State(residualAmount, serviceHub.myInfo.legalIdentity)
-        return FxResponse(inputs, listOf(transferedFundsOutput, residualOutput))
+        Cash.State(residualAmount, serviceHub.myInfo.legalIdentity)
     } else {
-        return FxResponse(inputs, listOf(transferedFundsOutput))
+        null
     }
+    val (outputs, myStates) = if (residualOutput != null) {
+        Pair(listOf(transferredFundsOutput, residualOutput), (inputs.map { it.state.data } + residualOutput))
+    } else {
+        Pair(listOf(transferredFundsOutput), inputs.map { it.state.data })
+    }
+
+    // Extract all of our anonymous identities so the counterparty knows who they're dealing with. This includes
+    // the change output so they know we're paying ourselves and not some third party.
+    val identities: List<AnonymousPartyAndPath> = myStates.map { it.owner.owningKey }
+            .toSet()
+            .map(serviceHub.identityService::anonymousFromKey)
+            .requireNoNulls()
+
+    return FxResponse(inputs, identities, outputs)
     // DOCEND 2
 }
 
-// A flow representing creating a transaction that
-// carries out exchange of cash assets.
+/** A flow representing creating a transaction that carries out exchange of cash assets. */
 @InitiatingFlow
-class ForeignExchangeFlow(val tradeId: String,
-                          val baseCurrencyAmount: Amount<Issued<Currency>>,
-                          val quoteCurrencyAmount: Amount<Issued<Currency>>,
-                          val baseCurrencyBuyer: Party,
-                          val baseCurrencySeller: Party) : FlowLogic<SecureHash>() {
+class ForeignExchangeFlow(val localRequest: FxRequest, val remoteRequest: FxRequest) : FlowLogic<SecureHash>() {
+    companion object {
+        fun buildBuyer(tradeId: String,
+                baseCurrencyAmount: Amount<Issued<Currency>>,
+                quoteCurrencyAmount: Amount<Issued<Currency>>,
+                baseCurrencyBuyer: Party,
+                baseCurrencySeller: Party) : ForeignExchangeFlow {
+            return ForeignExchangeFlow(
+                    FxRequest(tradeId, quoteCurrencyAmount, baseCurrencyBuyer, baseCurrencySeller),
+                    FxRequest(tradeId, baseCurrencyAmount, baseCurrencySeller, baseCurrencyBuyer)
+            )
+        }
+
+        fun buildSeller(tradeId: String,
+                       baseCurrencyAmount: Amount<Issued<Currency>>,
+                       quoteCurrencyAmount: Amount<Issued<Currency>>,
+                       baseCurrencyBuyer: Party,
+                       baseCurrencySeller: Party) : ForeignExchangeFlow {
+            return ForeignExchangeFlow(
+                    FxRequest(tradeId, baseCurrencyAmount, baseCurrencySeller, baseCurrencyBuyer),
+                    FxRequest(tradeId, quoteCurrencyAmount, baseCurrencyBuyer, baseCurrencySeller)
+            )
+        }
+    }
     @Suspendable
     override fun call(): SecureHash {
-        // Select correct sides of the Fx exchange to query for.
-        // Specifically we own the assets we wish to sell.
-        // Also prepare the other side query
-        val (localRequest, remoteRequest) = if (baseCurrencySeller == serviceHub.myInfo.legalIdentity) {
-            val local = FxRequest(tradeId, baseCurrencyAmount, baseCurrencySeller, baseCurrencyBuyer)
-            val remote = FxRequest(tradeId, quoteCurrencyAmount, baseCurrencyBuyer, baseCurrencySeller)
-            Pair(local, remote)
-        } else if (baseCurrencyBuyer == serviceHub.myInfo.legalIdentity) {
-            val local = FxRequest(tradeId, quoteCurrencyAmount, baseCurrencyBuyer, baseCurrencySeller)
-            val remote = FxRequest(tradeId, baseCurrencyAmount, baseCurrencySeller, baseCurrencyBuyer)
-            Pair(local, remote)
-        } else throw IllegalArgumentException("Our identity must be one of the parties in the trade.")
-
         // Call the helper method to identify suitable inputs and make the outputs
         val ourStates = prepareOurInputsAndOutputs(serviceHub, localRequest)
 
@@ -152,6 +174,21 @@ class ForeignExchangeFlow(val tradeId: String,
             it // return validated response
         }
 
+        // register the identities presented by the counterparty
+        theirStates.identities.forEach { it ->
+            logger.error("Registering anonymous identity ${it.party.owningKey.toStringShort()}")
+            serviceHub.identityService.verifyAndRegisterAnonymousIdentity(it, remoteRequestWithNotary.owner)
+        }
+
+        // verify we have all the identities for states (otherwise we have a potential KYC issue)
+        val theirStateOwners: Set<AbstractParty> = (theirStates.inputs.map { it.state.data } + theirStates.outputs)
+                .map(Cash.State::owner)
+                .filter { it != serviceHub.myInfo.legalIdentity }
+                .toSet()
+        theirStateOwners.forEach {
+            require(serviceHub.identityService.partyFromAnonymous(it) != null) { "Unknown owner ${it} in counterparty states" }
+        }
+
         // having collated the data create the full transaction.
         val signedTransaction = buildTradeProposal(ourStates, theirStates)
 
@@ -170,7 +207,7 @@ class ForeignExchangeFlow(val tradeId: String,
         }
 
         // Initiate the standard protocol to notarise and distribute to the involved parties.
-        subFlow(FinalityFlow(allPartySignedTx, setOf(baseCurrencyBuyer, baseCurrencySeller)))
+        subFlow(FinalityFlow(allPartySignedTx))
 
         return allPartySignedTx.id
     }
