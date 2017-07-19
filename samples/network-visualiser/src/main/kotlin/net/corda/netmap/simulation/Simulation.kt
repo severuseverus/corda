@@ -264,7 +264,7 @@ abstract class Simulation(val networkSendManuallyPumped: Boolean,
     }
 
     val networkInitialisationFinished: ListenableFuture<*> =
-            Futures.allAsList(mockNet.nodes.map { it.networkMapRegistrationFuture })
+            Futures.allAsList(mockNet.nodes.map { it.nodeReadyFuture })
 
     fun start(): ListenableFuture<Unit> {
         mockNet.startNodes()

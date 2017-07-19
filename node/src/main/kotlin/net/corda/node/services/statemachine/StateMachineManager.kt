@@ -168,7 +168,7 @@ class StateMachineManager(val serviceHub: ServiceHubInternal,
     fun start() {
         restoreFibersFromCheckpoints()
         listenToLedgerTransactions()
-        serviceHub.networkMapCache.mapServiceRegistered.then { executor.execute(this::resumeRestoredFibers) }
+        serviceHub.networkMapCache.nodeReady.then { executor.execute(this::resumeRestoredFibers) }
     }
 
     private fun listenToLedgerTransactions() {

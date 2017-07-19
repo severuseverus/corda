@@ -320,7 +320,7 @@ class MockNetwork(private val networkSendManuallyPumped: Boolean = false,
             if (start) {
                 configuration.baseDirectory.createDirectories()
                 start()
-                if (threadPerNode && networkMapAddress != null) networkMapRegistrationFuture.getOrThrow()
+                if (threadPerNode && networkMapAddress != null) nodeReadyFuture.getOrThrow()
             }
             _nodes.add(this)
         }

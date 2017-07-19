@@ -151,7 +151,7 @@ open class Node(override val configuration: FullNodeConfiguration,
                 myIdentityOrNullIfNetworkMapService,
                 serverThread,
                 database,
-                networkMapRegistrationFuture,
+                nodeReadyFuture,
                 services.monitoringService,
                 advertisedAddress)
     }
@@ -202,7 +202,6 @@ open class Node(override val configuration: FullNodeConfiguration,
      * it back to the queue.
      * - Once the message is received the session is closed and the queue deleted.
      */
-    // TODO this is where P2P messaging fails
     private fun discoverPublicHost(serverAddress: NetworkHostAndPort): String? {
         log.trace { "Trying to detect public hostname through the Network Map Service at $serverAddress" }
         val tcpTransport = ArtemisTcpTransport.tcpTransport(ConnectionDirection.Outbound(), serverAddress, configuration)
@@ -251,7 +250,6 @@ open class Node(override val configuration: FullNodeConfiguration,
         (network as NodeMessagingClient).start(rpcOps, userService)
     }
 
-    //TODO persistent NetworkMapCache
     override fun makeNetworkMapCache() = InMemoryNetworkMapCache(true, services)
 
     /**
@@ -306,7 +304,7 @@ open class Node(override val configuration: FullNodeConfiguration,
         }
         super.start()
 
-        networkMapRegistrationFuture.thenMatch({
+        nodeReadyFuture.thenMatch({
             serverThread.execute {
                 // Begin exporting our own metrics via JMX. These can be monitored using any agent, e.g. Jolokia:
                 //
