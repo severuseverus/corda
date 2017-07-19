@@ -89,6 +89,8 @@ interface DriverDSLExposedInterface : CordformContext {
      * @param rpcUsers List of users who are authorised to use the RPC system. Defaults to empty list.
      * @param startInSameProcess Determines if the node should be started inside the same process the Driver is running
      *     in. If null the Driver-level value will be used.
+     * @param noNetworkMapService tells us if we want to specify the network map for this node, or run only with database cached data
+     *     Notice, that if nothing is loaded from database and node doesn't have configured network map service the startup will fail.
      * @return The [NodeInfo] of the started up node retrieved from the network map service.
      */
     fun startNode(providedName: X500Name? = null,
@@ -96,7 +98,8 @@ interface DriverDSLExposedInterface : CordformContext {
                   rpcUsers: List<User> = emptyList(),
                   verifierType: VerifierType = VerifierType.InMemory,
                   customOverrides: Map<String, Any?> = emptyMap(),
-                  startInSameProcess: Boolean? = null): ListenableFuture<out NodeHandle>
+                  startInSameProcess: Boolean? = null,
+                  noNetworkMapService: Boolean = false): ListenableFuture<out NodeHandle>
 
     fun startNodes(
             nodes: List<CordformNode>,
@@ -538,6 +541,7 @@ class DriverDSL(
         }
     }
 
+    // TODO get rid of this? or what?
     private fun networkMapServiceConfigLookup(networkMapCandidates: List<NodeDefinition>): (X500Name) -> Map<String, String>? {
         return networkMapStartStrategy.run {
             when (this) {
@@ -553,17 +557,20 @@ class DriverDSL(
                         { nodeName: X500Name -> if (nodeName == legalName) null else it }
                     }
                 }
+                else -> TODO() //TODO
             }
         }
     }
 
+    // TODO do sth simillar to NodeBasedTest, add flag noNetworkMap, add network map for this network
     override fun startNode(
             providedName: X500Name?,
             advertisedServices: Set<ServiceInfo>,
             rpcUsers: List<User>,
             verifierType: VerifierType,
             customOverrides: Map<String, Any?>,
-            startInSameProcess: Boolean?
+            startInSameProcess: Boolean?,
+            noNetworkMapService: Boolean // TODO make it another network map strategy
     ): ListenableFuture<out NodeHandle> {
         val p2pAddress = portAllocation.nextHostAndPort()
         val rpcAddress = portAllocation.nextHostAndPort()
@@ -701,7 +708,8 @@ class DriverDSL(
                         //       node port numbers to be shifted, so all demos and docs need to be updated accordingly.
                         "webAddress" to webAddress.toString(),
                         "p2pAddress" to dedicatedNetworkMapAddress.toString(),
-                        "useTestClock" to useTestClock
+                        "useTestClock" to useTestClock,
+                        "extraAdvertisedServiceIds" to listOf(ServiceInfo(NetworkMapService.type).toString())
                 )
         )
         return startNodeInternal(config, webAddress, startInProcess)
