@@ -87,14 +87,10 @@ private fun prepareOurInputsAndOutputs(serviceHub: ServiceHub, request: FxReques
     // Build and an output state for the counterparty
     val transferredFundsOutput = Cash.State(sellAmount, request.counterparty)
 
-    val residualOutput = if (residual > 0L) {
+    val (outputs, myStates) = if (residual > 0L) {
         // Build an output state for the residual change back to us
         val residualAmount = Amount(residual, sellAmount.token)
-        Cash.State(residualAmount, serviceHub.myInfo.legalIdentity)
-    } else {
-        null
-    }
-    val (outputs, myStates) = if (residualOutput != null) {
+        val residualOutput = Cash.State(residualAmount, serviceHub.myInfo.legalIdentity)
         Pair(listOf(transferredFundsOutput, residualOutput), (inputs.map { it.state.data } + residualOutput))
     } else {
         Pair(listOf(transferredFundsOutput), inputs.map { it.state.data })
@@ -176,7 +172,6 @@ class ForeignExchangeFlow(val localRequest: FxRequest, val remoteRequest: FxRequ
 
         // register the identities presented by the counterparty
         theirStates.identities.forEach { it ->
-            logger.error("Registering anonymous identity ${it.party.owningKey.toStringShort()}")
             serviceHub.identityService.verifyAndRegisterAnonymousIdentity(it, remoteRequestWithNotary.owner)
         }
 
