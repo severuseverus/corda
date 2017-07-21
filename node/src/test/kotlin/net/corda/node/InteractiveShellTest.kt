@@ -6,17 +6,17 @@ import net.corda.core.contracts.Amount
 import net.corda.core.crypto.SecureHash
 import net.corda.core.flows.FlowInitiator
 import net.corda.core.flows.FlowLogic
-import net.corda.core.flows.StackDump
-import net.corda.core.internal.FlowStateMachine
+import net.corda.core.flows.FlowStackSnapshot
 import net.corda.core.flows.StateMachineRunId
 import net.corda.core.identity.Party
+import net.corda.core.internal.FlowStateMachine
 import net.corda.core.node.ServiceHub
 import net.corda.core.transactions.SignedTransaction
-import net.corda.testing.DUMMY_CA
 import net.corda.core.utilities.UntrustworthyData
 import net.corda.jackson.JacksonSupport
 import net.corda.node.services.identity.InMemoryIdentityService
 import net.corda.node.shell.InteractiveShell
+import net.corda.testing.DUMMY_CA
 import net.corda.testing.MEGA_CORP
 import net.corda.testing.MEGA_CORP_IDENTITY
 import org.junit.Test
@@ -87,7 +87,11 @@ class InteractiveShellTest {
             throw UnsupportedOperationException("not implemented")
         }
 
-        override fun debugStackDump(): StackDump {
+        override fun flowStackSnapshot(flowClass: Class<*>): FlowStackSnapshot {
+            throw UnsupportedOperationException("not implemented")
+        }
+
+        override fun persistFlowStackSnapshot(flowClass: Class<*>, path: String?) {
             throw UnsupportedOperationException("not implemented")
         }
 
