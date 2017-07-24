@@ -42,6 +42,7 @@ import net.corda.node.services.identity.InMemoryIdentityService
 import net.corda.node.services.keys.PersistentKeyManagementService
 import net.corda.node.services.messaging.MessagingService
 import net.corda.node.services.messaging.sendRequest
+import net.corda.node.services.network.InMemoryNetworkMapCache
 import net.corda.node.services.network.NetworkMapService
 import net.corda.node.services.network.NetworkMapService.RegistrationRequest
 import net.corda.node.services.network.NetworkMapService.RegistrationResponse
@@ -697,8 +698,6 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
 
     protected abstract fun startMessagingService(rpcOps: RPCOps)
 
-    protected abstract fun makeNetworkMapCache(): NetworkMapCacheInternal
-
     protected fun obtainLegalIdentity(): PartyAndCertificate = identityKeyPair.first
     protected fun obtainLegalIdentityKey(): KeyPair = identityKeyPair.second
     private val identityKeyPair by lazy { obtainKeyPair("identity", configuration.myLegalName) }
@@ -789,7 +788,7 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
         override val validatedTransactions = makeTransactionStorage()
         override val transactionVerifierService by lazy { makeTransactionVerifierService() }
         override val schemaService by lazy { NodeSchemaService(pluginRegistries.flatMap { it.requiredSchemas }.toSet()) }
-        override val networkMapCache by lazy { makeNetworkMapCache() }
+        override val networkMapCache by lazy { InMemoryNetworkMapCache(this) }
         override val vaultService by lazy { NodeVaultService(this, configuration.dataSourceProperties) }
         override val vaultQueryService by lazy {
             HibernateVaultQueryImpl(HibernateConfiguration(schemaService), vaultService.updatesPublisher)
