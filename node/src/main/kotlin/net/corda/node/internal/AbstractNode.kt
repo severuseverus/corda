@@ -12,7 +12,7 @@ import net.corda.core.crypto.*
 import net.corda.core.flatMap
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
-import net.corda.core.identity.PartyAndCertificate
+import net.corda.core.identity.VerifiedParty
 import net.corda.core.internal.*
 import net.corda.core.messaging.CordaRPCOps
 import net.corda.core.messaging.RPCOps
@@ -651,7 +651,7 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
 
     protected open fun makeIdentityService(trustRoot: X509Certificate,
                                            clientCa: CertificateAndKeyPair?,
-                                           legalIdentity: PartyAndCertificate): IdentityService {
+                                           legalIdentity: VerifiedParty): IdentityService {
         val caCertificates: Array<X509Certificate> = listOf(legalIdentity.certificate.cert, clientCa?.certificate?.cert)
                 .filterNotNull()
                 .toTypedArray()
@@ -686,11 +686,11 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
 
     protected abstract fun startMessagingService(rpcOps: RPCOps)
 
-    protected fun obtainLegalIdentity(): PartyAndCertificate = identityKeyPair.first
+    protected fun obtainLegalIdentity(): VerifiedParty = identityKeyPair.first
     protected fun obtainLegalIdentityKey(): KeyPair = identityKeyPair.second
     private val identityKeyPair by lazy { obtainKeyPair("identity", configuration.myLegalName) }
 
-    private fun obtainKeyPair(serviceId: String, serviceName: X500Name): Pair<PartyAndCertificate, KeyPair> {
+    private fun obtainKeyPair(serviceId: String, serviceName: X500Name): Pair<VerifiedParty, KeyPair> {
         // Load the private identity key, creating it if necessary. The identity key is a long term well known key that
         // is distributed to other peers and we use it (or a key signed by it) when we need to do something
         // "permissioned". The identity file is what gets distributed and contains the node's legal name along with
@@ -734,7 +734,7 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
         }
 
         partyKeys += keyPair
-        return Pair(PartyAndCertificate(loadedServiceName, publicKey, cert, certPath), keyPair)
+        return Pair(VerifiedParty(loadedServiceName, publicKey, cert, certPath), keyPair)
     }
 
     private fun migrateKeysFromFile(keyStore: KeyStoreWrapper, serviceName: X500Name,
@@ -753,11 +753,11 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
         log.info("Finish migrating $privateKeyAlias from file to keystore.")
     }
 
-    private fun getTestPartyAndCertificate(party: Party, trustRoot: CertificateAndKeyPair): PartyAndCertificate {
+    private fun getTestPartyAndCertificate(party: Party, trustRoot: CertificateAndKeyPair): VerifiedParty {
         val certFactory = CertificateFactory.getInstance("X509")
         val certHolder = X509Utilities.createCertificate(CertificateType.IDENTITY, trustRoot.certificate, trustRoot.keyPair, party.name, party.owningKey)
         val certPath = certFactory.generateCertPath(listOf(certHolder.cert, trustRoot.certificate.cert))
-        return PartyAndCertificate(party, certHolder, certPath)
+        return VerifiedParty(party, certHolder, certPath)
     }
 
     protected open fun generateKeyPair() = cryptoGenerateKeyPair()

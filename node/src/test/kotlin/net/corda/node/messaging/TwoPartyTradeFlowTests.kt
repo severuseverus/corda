@@ -16,7 +16,7 @@ import net.corda.core.flows.StateMachineRunId
 import net.corda.core.getOrThrow
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.AnonymousParty
-import net.corda.core.identity.AnonymousPartyAndPath
+import net.corda.core.identity.VerifiedAnonymousParty
 import net.corda.core.identity.Party
 import net.corda.core.internal.FlowStateMachine
 import net.corda.core.internal.rootCause
@@ -530,7 +530,7 @@ class TwoPartyTradeFlowTests {
                           val notary: NodeInfo,
                           val assetToSell: StateAndRef<OwnableState>,
                           val price: Amount<Currency>,
-                          val me: AnonymousPartyAndPath) : FlowLogic<SignedTransaction>() {
+                          val me: VerifiedAnonymousParty) : FlowLogic<SignedTransaction>() {
         @Suspendable
         override fun call(): SignedTransaction {
             send(buyer, Pair(notary.notaryIdentity, price))

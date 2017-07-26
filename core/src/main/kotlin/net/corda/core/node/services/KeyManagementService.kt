@@ -2,8 +2,8 @@ package net.corda.core.node.services
 
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.core.crypto.DigitalSignature
-import net.corda.core.identity.AnonymousPartyAndPath
-import net.corda.core.identity.PartyAndCertificate
+import net.corda.core.identity.VerifiedAnonymousParty
+import net.corda.core.identity.VerifiedParty
 import java.security.PublicKey
 
 /**
@@ -32,7 +32,7 @@ interface KeyManagementService {
      * @return X.509 certificate and path to the trust root.
      */
     @Suspendable
-    fun freshKeyAndCert(identity: PartyAndCertificate, revocationEnabled: Boolean): AnonymousPartyAndPath
+    fun freshKeyAndCert(identity: VerifiedParty, revocationEnabled: Boolean): VerifiedAnonymousParty
 
     /**
      * Filter some keys down to the set that this node owns (has private keys for).
