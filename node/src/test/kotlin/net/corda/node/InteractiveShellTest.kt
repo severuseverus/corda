@@ -72,40 +72,28 @@ class InteractiveShellTest {
     fun party() = check("party: \"${MEGA_CORP.name}\"", MEGA_CORP.name.toString())
 
     class DummyFSM(val logic: FlowA) : FlowStateMachine<Any?> {
-        override fun <T : Any> sendAndReceive(receiveType: Class<T>, otherParty: Party, payload: Any, sessionFlow: FlowLogic<*>, retrySend: Boolean): UntrustworthyData<T> {
-            throw UnsupportedOperationException("not implemented")
-        }
+        override fun <T : Any> sendAndReceive(receiveType: Class<T>, otherParty: Party, payload: Any, sessionFlow: FlowLogic<*>, retrySend: Boolean): UntrustworthyData<T> = TODO()
 
-        override fun <T : Any> receive(receiveType: Class<T>, otherParty: Party, sessionFlow: FlowLogic<*>): UntrustworthyData<T> {
-            throw UnsupportedOperationException("not implemented")
-        }
+        override fun <T : Any> receive(receiveType: Class<T>, otherParty: Party, sessionFlow: FlowLogic<*>): UntrustworthyData<T> = TODO()
 
-        override fun send(otherParty: Party, payload: Any, sessionFlow: FlowLogic<*>) {
-            throw UnsupportedOperationException("not implemented")
-        }
+        override fun send(otherParty: Party, payload: Any, sessionFlow: FlowLogic<*>): Unit = TODO()
 
-        override fun waitForLedgerCommit(hash: SecureHash, sessionFlow: FlowLogic<*>): SignedTransaction {
-            throw UnsupportedOperationException("not implemented")
-        }
+        override fun waitForLedgerCommit(hash: SecureHash, sessionFlow: FlowLogic<*>): SignedTransaction = TODO()
 
-        override fun flowStackSnapshot(flowClass: Class<*>): FlowStackSnapshot {
-            throw UnsupportedOperationException("not implemented")
-        }
+        override fun flowStackSnapshot(flowClass: Class<*>): FlowStackSnapshot = TODO()
 
-        override fun persistFlowStackSnapshot(flowClass: Class<*>) {
-            throw UnsupportedOperationException("not implemented")
-        }
+        override fun persistFlowStackSnapshot(flowClass: Class<*>): Unit = TODO()
 
         override val serviceHub: ServiceHub
-            get() = throw UnsupportedOperationException()
+            get() = TODO()
         override val logger: Logger
-            get() = throw UnsupportedOperationException()
+            get() = TODO()
         override val id: StateMachineRunId
-            get() = throw UnsupportedOperationException()
+            get() = TODO()
         override val resultFuture: ListenableFuture<Any?>
-            get() = throw UnsupportedOperationException()
+            get() = TODO()
         override val flowInitiator: FlowInitiator
-            get() = throw UnsupportedOperationException()
+            get() = TODO()
 
         override fun checkFlowPermission(permissionName: String, extraAuditData: Map<String, String>) {
             // Do nothing

@@ -93,7 +93,7 @@ class FlowStateMachineImpl<R>(override val id: StateMachineRunId,
     }
 
     @Suspendable
-    override fun run() {
+    override fun run(): Unit {
         createTransaction()
         logger.debug { "Calling flow: $logic" }
         val startTime = System.nanoTime()
@@ -184,7 +184,7 @@ class FlowStateMachineImpl<R>(override val id: StateMachineRunId,
     }
 
     @Suspendable
-    override fun send(otherParty: Party, payload: Any, sessionFlow: FlowLogic<*>) {
+    override fun send(otherParty: Party, payload: Any, sessionFlow: FlowLogic<*>): Unit {
         logger.debug { "send($otherParty, ${payload.toString().abbreviate(300)})" }
         val session = getConfirmedSession(otherParty, sessionFlow)
         if (session == null) {
@@ -217,7 +217,7 @@ class FlowStateMachineImpl<R>(override val id: StateMachineRunId,
     }
 
     // TODO Dummy implementation of access to application specific permission controls and audit logging
-    override fun checkFlowPermission(permissionName: String, extraAuditData: Map<String, String>) {
+    override fun checkFlowPermission(permissionName: String, extraAuditData: Map<String, String>): Unit {
         val permissionGranted = true // TODO define permission control service on ServiceHubInternal and actually check authorization.
         val checkPermissionEvent = FlowPermissionAuditEvent(
                 serviceHub.clock.instant(),
@@ -235,7 +235,7 @@ class FlowStateMachineImpl<R>(override val id: StateMachineRunId,
     }
 
     // TODO Dummy implementation of access to application specific audit logging
-    override fun recordAuditEvent(eventType: String, comment: String, extraAuditData: Map<String, String>) {
+    override fun recordAuditEvent(eventType: String, comment: String, extraAuditData: Map<String, String>): Unit {
         val flowAuditEvent = FlowAppAuditEvent(
                 serviceHub.clock.instant(),
                 flowInitiator,
@@ -253,7 +253,7 @@ class FlowStateMachineImpl<R>(override val id: StateMachineRunId,
         return factory.getFlowStackSnapshot(flowClass)
     }
 
-    override fun persistFlowStackSnapshot(flowClass: Class<*>) {
+    override fun persistFlowStackSnapshot(flowClass: Class<*>): Unit {
         val factory = FlowStackSnapshotDefaults.FLOW_STACK_SNAPSHOT_FACTORY
         factory.persistAsJsonFile(flowClass, serviceHub.configuration.baseDirectory, id.toString())
     }
