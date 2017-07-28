@@ -9,15 +9,18 @@ import net.corda.client.rpc.CordaRPCClient
 import net.corda.cordform.CordformContext
 import net.corda.cordform.CordformNode
 import net.corda.cordform.NodeDefinition
-import net.corda.core.*
+import net.corda.core.andForget
 import net.corda.core.concurrent.firstOf
 import net.corda.core.crypto.X509Utilities
 import net.corda.core.crypto.appendToCommonName
 import net.corda.core.crypto.commonName
+import net.corda.core.flatMap
+import net.corda.core.getOrThrow
 import net.corda.core.identity.Party
 import net.corda.core.internal.ThreadBox
 import net.corda.core.internal.div
 import net.corda.core.internal.times
+import net.corda.core.map
 import net.corda.core.messaging.CordaRPCOps
 import net.corda.core.node.NodeInfo
 import net.corda.core.node.services.ServiceInfo
@@ -281,7 +284,6 @@ fun <DI : DriverDSLExposedInterface, D : DriverDSLInternalInterface, A> genericD
         coerce: (D) -> DI,
         dsl: DI.() -> A
 ): A {
-    initialiseFlowStackSnapshotFactory()
     if (initialiseSerialization) initialiseTestSerialization()
     val shutdownHook = addShutdownHook(driverDsl::shutdown)
     try {

@@ -6,7 +6,6 @@ import net.corda.core.contracts.Amount
 import net.corda.core.crypto.SecureHash
 import net.corda.core.flows.FlowInitiator
 import net.corda.core.flows.FlowLogic
-import net.corda.core.flows.FlowStackSnapshot
 import net.corda.core.flows.StateMachineRunId
 import net.corda.core.identity.Party
 import net.corda.core.internal.FlowStateMachine
@@ -79,10 +78,6 @@ class InteractiveShellTest {
         override fun send(otherParty: Party, payload: Any, sessionFlow: FlowLogic<*>): Unit = TODO()
 
         override fun waitForLedgerCommit(hash: SecureHash, sessionFlow: FlowLogic<*>): SignedTransaction = TODO()
-
-        override fun flowStackSnapshot(flowClass: Class<*>): FlowStackSnapshot = TODO()
-
-        override fun persistFlowStackSnapshot(flowClass: Class<*>): Unit = TODO()
 
         override val serviceHub: ServiceHub
             get() = TODO()
