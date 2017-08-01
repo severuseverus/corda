@@ -139,7 +139,10 @@ class ScheduledFlowTests {
             nodeB.services.vaultService.linearHeadsOfType<ScheduledState>()
         }
         assertEquals(2 * N, statesFromA.count(), "Expect all states to be present")
-        assertEquals(statesFromA, statesFromB, "Expect identical data on both nodes")
+
+        statesFromA.forEach { key, value ->
+            assertEquals(value, statesFromB[key], "Expect identical data on both nodes")
+        }
         assertTrue("Expect all states have run the scheduled task", statesFromB.values.all { it.state.data.processed })
     }
 }
