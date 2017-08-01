@@ -130,15 +130,15 @@ public class FlowCookbookJava {
             // We may also need to identify a specific counterparty.
             // Again, we do so using the network map.
             // DOCSTART 2
-            Party namedCounterparty = getServiceHub().getNetworkMapCache().getNodeByLegalName(new X500Name("CN=NodeA,O=NodeA,L=London,C=UK")).getLegalIdentity();
-            Party keyedCounterparty = getServiceHub().getNetworkMapCache().getNodeByLegalIdentityKey(dummyPubKey).getLegalIdentity();
-            Party firstCounterparty = getServiceHub().getNetworkMapCache().getPartyNodes().get(0).getLegalIdentity();
+            Party namedCounterparty = getServiceHub().getNetworkMapCache().getNodeByLegalName(new X500Name("CN=NodeA,O=NodeA,L=London,C=UK")).getLegalIdentityAndCert2().getParty(); // TODO query should return party
+            Party keyedCounterparty = getServiceHub().getNetworkMapCache().getNodeByLegalIdentityKey(dummyPubKey).getLegalIdentityAndCert2().getParty();
+            Party firstCounterparty = getServiceHub().getNetworkMapCache().getPartyNodes().get(0).getLegalIdentityAndCert2().getParty();
             // DOCEND 2
 
             // Finally, we can use the map to identify nodes providing a
             // specific service (e.g. a regulator or an oracle).
             // DOCSTART 3
-            Party regulator = getServiceHub().getNetworkMapCache().getNodesWithService(ServiceType.Companion.getRegulator()).get(0).getLegalIdentity();
+            Party regulator = getServiceHub().getNetworkMapCache().getNodesWithService(ServiceType.Companion.getRegulator()).get(0).getLegalIdentityAndCert2().getParty();
             // DOCEND 3
 
             /*------------------------------

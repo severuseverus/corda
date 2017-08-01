@@ -75,6 +75,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.KeyPair
 import java.security.KeyStoreException
+import java.security.PublicKey
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.time.Clock
@@ -490,10 +491,9 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
 
     private fun makeInfo(): NodeInfo {
         val advertisedServiceEntries = makeServiceEntries()
-        val legalIdentity = obtainLegalIdentity()
-        val allIdentitiesSet = (advertisedServiceEntries.map { it.identity } + legalIdentity).toNonEmptySet()
+        val allIdentitiesSet = (advertisedServiceEntries.map { it.identity } + services.legalIdentity).toNonEmptySet()
         val addresses = myAddresses() // TODO There is no support for multiple IP addresses yet.
-        return NodeInfo(addresses, legalIdentity, allIdentitiesSet, platformVersion, advertisedServiceEntries, findMyLocation())
+        return NodeInfo(addresses, services.legalIdentity, allIdentitiesSet, platformVersion, advertisedServiceEntries, findMyLocation())
     }
 
     /**
@@ -655,12 +655,14 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
         val caCertificates: Array<X509Certificate> = listOf(legalIdentity.certificate.cert, clientCa?.certificate?.cert)
                 .filterNotNull()
                 .toTypedArray()
-        val service = InMemoryIdentityService(setOf(info.legalIdentityAndCert), trustRoot = trustRoot, caCertificates = *caCertificates)
-        services.networkMapCache.partyNodes.forEach { service.registerIdentity(it.legalIdentityAndCert) }
+        val service = InMemoryIdentityService(setOf(services.legalIdentity), trustRoot = trustRoot, caCertificates = *caCertificates) // TODO race?
+        services.networkMapCache.partyNodes.forEach { it.legalIdentitiesAndCerts.forEach { service.registerIdentity(it) } }
         services.networkMapCache.changed.subscribe { mapChange ->
             // TODO how should we handle network map removal
             if (mapChange is MapChange.Added) {
-                service.registerIdentity(mapChange.node.legalIdentityAndCert)
+                mapChange.node.legalIdentitiesAndCerts.forEach { // TODO think why before we didn't register all identities
+                    service.registerIdentity(it)
+                }
             }
         }
         return service
@@ -785,13 +787,14 @@ abstract class AbstractNode(open val configuration: NodeConfiguration,
         // the identity key. But the infrastructure to make that easy isn't here yet.
         override val keyManagementService by lazy { makeKeyManagementService(identityService) }
         override val schedulerService by lazy { NodeSchedulerService(this, unfinishedSchedules = busyNodeLatch) }
+        override val legalIdentity = obtainLegalIdentity()
         override val identityService by lazy {
             val trustStore = KeyStoreWrapper(configuration.trustStoreFile, configuration.trustStorePassword)
             val caKeyStore = KeyStoreWrapper(configuration.nodeKeystore, configuration.keyStorePassword)
             makeIdentityService(
                     trustStore.getX509Certificate(X509Utilities.CORDA_ROOT_CA).cert,
                     caKeyStore.certificateAndKeyPair(X509Utilities.CORDA_CLIENT_CA),
-                    info.legalIdentityAndCert)
+                    legalIdentity)
         }
         override val attachments: AttachmentStorage get() = this@AbstractNode.attachments
         override val networkService: MessagingService get() = network

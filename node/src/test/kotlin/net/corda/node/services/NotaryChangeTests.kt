@@ -130,7 +130,7 @@ class NotaryChangeTests {
     }
 
     private fun issueEncumberedState(node: AbstractNode, notaryNode: AbstractNode): WireTransaction {
-        val owner = node.info.legalIdentity.ref(0)
+        val owner = node.services.legalIdentity.party.ref(0)
         val notary = notaryNode.info.notaryIdentity
 
         val stateA = DummyContract.SingleOwnerState(Random().nextInt(), owner.party)
@@ -158,7 +158,7 @@ class NotaryChangeTests {
 }
 
 fun issueState(node: AbstractNode, notaryNode: AbstractNode): StateAndRef<*> {
-    val tx = DummyContract.generateInitial(Random().nextInt(), notaryNode.info.notaryIdentity, node.info.legalIdentity.ref(0))
+    val tx = DummyContract.generateInitial(Random().nextInt(), notaryNode.info.notaryIdentity, node.services.legalIdentity.party.ref(0))
     val signedByNode = node.services.signInitialTransaction(tx)
     val stx = notaryNode.services.addSignature(signedByNode, notaryNode.services.notaryIdentityKey)
     node.services.recordTransactions(stx)
@@ -167,7 +167,7 @@ fun issueState(node: AbstractNode, notaryNode: AbstractNode): StateAndRef<*> {
 
 fun issueMultiPartyState(nodeA: AbstractNode, nodeB: AbstractNode, notaryNode: AbstractNode): StateAndRef<DummyContract.MultiOwnerState> {
     val state = TransactionState(DummyContract.MultiOwnerState(0,
-            listOf(nodeA.info.legalIdentity, nodeB.info.legalIdentity)), notaryNode.info.notaryIdentity)
+            listOf(nodeA.services.legalIdentity.party, nodeB.services.legalIdentity.party)), notaryNode.info.notaryIdentity)
     val tx = TransactionBuilder(notary = notaryNode.info.notaryIdentity).withItems(state)
     val signedByA = nodeA.services.signInitialTransaction(tx)
     val signedByAB = nodeB.services.addSignature(signedByA)
@@ -179,7 +179,7 @@ fun issueMultiPartyState(nodeA: AbstractNode, nodeB: AbstractNode, notaryNode: A
 }
 
 fun issueInvalidState(node: AbstractNode, notary: Party): StateAndRef<*> {
-    val tx = DummyContract.generateInitial(Random().nextInt(), notary, node.info.legalIdentity.ref(0))
+    val tx = DummyContract.generateInitial(Random().nextInt(), notary, node.services.legalIdentity.party.ref(0))
     tx.setTimeWindow(Instant.now(), 30.seconds)
     val stx = node.services.signInitialTransaction(tx)
     node.services.recordTransactions(stx)

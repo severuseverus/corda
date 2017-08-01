@@ -45,8 +45,8 @@ class DataVendingServiceTests {
         val nodes = mockNet.createSomeNodes(2)
         val vaultServiceNode = nodes.partyNodes[0]
         val registerNode = nodes.partyNodes[1]
-        val beneficiary = vaultServiceNode.info.legalIdentity
-        val deposit = registerNode.info.legalIdentity.ref(1)
+        val beneficiary = vaultServiceNode.services.legalIdentity.party
+        val deposit = registerNode.services.legalIdentity.party.ref(1)
         mockNet.runNetwork()
 
         // Generate an issuance transaction
@@ -75,7 +75,7 @@ class DataVendingServiceTests {
         val nodes = mockNet.createSomeNodes(2)
         val vaultServiceNode = nodes.partyNodes[0]
         val registerNode = nodes.partyNodes[1]
-        val beneficiary = vaultServiceNode.info.legalIdentity
+        val beneficiary = vaultServiceNode.services.legalIdentity.party
         val deposit = MEGA_CORP.ref(1)
         mockNet.runNetwork()
 
@@ -97,7 +97,7 @@ class DataVendingServiceTests {
 
     private fun MockNode.sendNotifyTx(tx: SignedTransaction, walletServiceNode: MockNode) {
         walletServiceNode.registerInitiatedFlow(InitiateNotifyTxFlow::class.java)
-        services.startFlow(NotifyTxFlow(walletServiceNode.info.legalIdentity, tx))
+        services.startFlow(NotifyTxFlow(walletServiceNode.services.legalIdentity.party, tx))
         mockNet.runNetwork()
     }
 

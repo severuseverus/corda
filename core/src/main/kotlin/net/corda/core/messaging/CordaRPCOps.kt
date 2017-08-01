@@ -58,7 +58,7 @@ interface CordaRPCOps : RPCOps {
      * Returns the RPC protocol version, which is the same the node's Platform Version. Exists since version 1 so guaranteed
      * to be present.
      */
-    override val protocolVersion: Int get() = nodeIdentity().platformVersion
+    override val protocolVersion: Int get() = nodeInfo().platformVersion
 
     /**
      * Returns a data feed of currently in-progress state machine infos and an observable of future state machine adds/removes.
@@ -194,7 +194,12 @@ interface CordaRPCOps : RPCOps {
     /**
      * Returns Node's identity, assuming this will not change while the node is running.
      */
-    fun nodeIdentity(): NodeInfo
+    fun nodeMainIdentity(): Party
+
+    /**
+     * Returns Node's NodeInfo, assuming this will not change while the node is running.
+     */
+    fun nodeInfo(): NodeInfo
 
     /*
      * Add note(s) to an existing Vault transaction

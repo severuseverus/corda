@@ -26,7 +26,7 @@ import java.util.*
 @JvmOverloads
 fun ServiceHub.fillWithSomeTestDeals(dealIds: List<String>,
                                      participants: List<AbstractParty> = emptyList()) : Vault<DealState> {
-    val myKey: PublicKey = myInfo.legalIdentity.owningKey
+    val myKey: PublicKey = legalIdentityKey
     val me = AnonymousParty(myKey)
 
     val transactions: List<SignedTransaction> = dealIds.map {
@@ -56,7 +56,7 @@ fun ServiceHub.fillWithSomeTestLinearStates(numberToCreate: Int,
                                             linearNumber: Long = 0L,
                                             linearBoolean: Boolean = false,
                                             linearTimestamp: Instant = now()) : Vault<LinearState> {
-    val myKey: PublicKey = myInfo.legalIdentity.owningKey
+    val myKey: PublicKey = legalIdentityKey
     val me = AnonymousParty(myKey)
 
     val transactions: List<SignedTransaction> = (1..numberToCreate).map {
@@ -106,7 +106,7 @@ fun ServiceHub.fillWithSomeTestCash(howMuch: Amount<Currency>,
                                     issuerKey: KeyPair = DUMMY_CASH_ISSUER_KEY): Vault<Cash.State> {
     val amounts = calculateRandomlySizedAmounts(howMuch, atLeastThisManyStates, atMostThisManyStates, rng)
 
-    val myKey: PublicKey = ownedBy?.owningKey ?: myInfo.legalIdentity.owningKey
+    val myKey: PublicKey = ownedBy?.owningKey ?: legalIdentityKey
     val me = AnonymousParty(myKey)
 
     // We will allocate one state to one transaction, for simplicities sake.
@@ -136,7 +136,7 @@ fun ServiceHub.fillWithSomeTestCommodity(amount: Amount<Commodity>,
                                          ownedBy: AbstractParty? = null,
                                          issuedBy: PartyAndReference = DUMMY_OBLIGATION_ISSUER.ref(1),
                                          issuerKey: KeyPair = DUMMY_OBLIGATION_ISSUER_KEY): Vault<CommodityContract.State> {
-    val myKey: PublicKey = ownedBy?.owningKey ?: myInfo.legalIdentity.owningKey
+    val myKey: PublicKey = ownedBy?.owningKey ?: legalIdentityKey
     val me = AnonymousParty(myKey)
 
     val commodity = CommodityContract()

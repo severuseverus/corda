@@ -25,7 +25,7 @@ class BroadcastTransactionFlow(val notarisedTransaction: SignedTransaction,
     override fun call() {
         // TODO: Messaging layer should handle this broadcast for us
         val msg = NotifyTxRequest(notarisedTransaction)
-        participants.filter { it != serviceHub.myInfo.legalIdentity }.forEach { participant ->
+        participants.filter { it != serviceHub.legalIdentity.party }.forEach { participant ->
             // This pops out the other side in NotifyTransactionHandler
             send(participant, msg)
         }

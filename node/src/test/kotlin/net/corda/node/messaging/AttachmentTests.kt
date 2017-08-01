@@ -67,7 +67,7 @@ class AttachmentTests {
 
         // Get node one to run a flow to fetch it and insert it.
         mockNet.runNetwork()
-        val f1 = n1.services.startFlow(FetchAttachmentsFlow(setOf(id), n0.info.legalIdentity))
+        val f1 = n1.services.startFlow(FetchAttachmentsFlow(setOf(id), n0.services.legalIdentity.party))
         mockNet.runNetwork()
         assertEquals(0, f1.resultFuture.getOrThrow().fromDisk.size)
 
@@ -81,7 +81,7 @@ class AttachmentTests {
         // Shut down node zero and ensure node one can still resolve the attachment.
         n0.stop()
 
-        val response: FetchDataFlow.Result<Attachment> = n1.services.startFlow(FetchAttachmentsFlow(setOf(id), n0.info.legalIdentity)).resultFuture.getOrThrow()
+        val response: FetchDataFlow.Result<Attachment> = n1.services.startFlow(FetchAttachmentsFlow(setOf(id), n0.services.legalIdentity.party)).resultFuture.getOrThrow()
         assertEquals(attachment, response.fromDisk[0])
     }
 
@@ -94,7 +94,7 @@ class AttachmentTests {
         // Get node one to fetch a non-existent attachment.
         val hash = SecureHash.randomSHA256()
         mockNet.runNetwork()
-        val f1 = n1.services.startFlow(FetchAttachmentsFlow(setOf(hash), n0.info.legalIdentity))
+        val f1 = n1.services.startFlow(FetchAttachmentsFlow(setOf(hash), n0.services.legalIdentity.party))
         mockNet.runNetwork()
         val e = assertFailsWith<FetchDataFlow.HashNotFound> { f1.resultFuture.getOrThrow() }
         assertEquals(hash, e.requested)
@@ -138,7 +138,7 @@ class AttachmentTests {
 
         // Get n1 to fetch the attachment. Should receive corrupted bytes.
         mockNet.runNetwork()
-        val f1 = n1.services.startFlow(FetchAttachmentsFlow(setOf(id), n0.info.legalIdentity))
+        val f1 = n1.services.startFlow(FetchAttachmentsFlow(setOf(id), n0.services.legalIdentity.party))
         mockNet.runNetwork()
         assertFailsWith<FetchDataFlow.DownloadedVsRequestedDataMismatch> { f1.resultFuture.getOrThrow() }
     }

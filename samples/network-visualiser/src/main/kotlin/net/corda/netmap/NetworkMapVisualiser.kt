@@ -226,7 +226,7 @@ class NetworkMapVisualiser : Application() {
                         // Flow done; schedule it for removal in a few seconds. We batch them up to make nicer
                         // animations.
                         updateProgressTrackerWidget(change)
-                        println("Flow done for ${node.info.legalIdentity.name}")
+                        println("Flow done for ${node.services.legalIdentity.name}")
                         viewModel.doneTrackers += tracker
                     } else {
                         // Subflow is done; ignore it.
@@ -234,7 +234,7 @@ class NetworkMapVisualiser : Application() {
                 } else if (!viewModel.trackerBoxes.containsKey(tracker)) {
                     // New flow started up; add.
                     val extraLabel = viewModel.simulation.extraNodeLabels[node]
-                    val label = if (extraLabel != null) "${node.info.legalIdentity.name.commonName}: $extraLabel" else node.info.legalIdentity.name.commonName
+                    val label = if (extraLabel != null) "${node.services.legalIdentity.name.commonName}: $extraLabel" else node.services.legalIdentity.name.commonName
                     val widget = view.buildProgressTrackerWidget(label, tracker.topLevelTracker)
                     println("Added: $tracker, $widget")
                     viewModel.trackerBoxes[tracker] = widget

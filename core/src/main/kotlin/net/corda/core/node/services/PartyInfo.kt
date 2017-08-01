@@ -12,7 +12,7 @@ sealed class PartyInfo {
     abstract val party: PartyAndCertificate
 
     data class Node(val node: NodeInfo) : PartyInfo() {
-        override val party get() = node.legalIdentityAndCert
+        override val party get() = node.legalIdentityAndCert2 // TODO it is one place that whole removal fails
     }
 
     data class Service(val service: ServiceEntry) : PartyInfo() {

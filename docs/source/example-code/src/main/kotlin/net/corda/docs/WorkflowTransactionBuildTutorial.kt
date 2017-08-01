@@ -118,7 +118,7 @@ class SubmitTradeApprovalFlow(val tradeId: String,
         // Manufacture an initial state
         val tradeProposal = TradeApprovalContract.State(
                 tradeId,
-                serviceHub.myInfo.legalIdentity,
+                serviceHub.legalIdentity.party,
                 counterparty)
         // identify a notary. This might also be done external to the flow
         val notary = serviceHub.networkMapCache.getAnyNotary()
@@ -129,7 +129,7 @@ class SubmitTradeApprovalFlow(val tradeId: String,
         // We can automatically sign as there is no untrusted data.
         val signedTx = serviceHub.signInitialTransaction(tx)
         // Notarise and distribute.
-        subFlow(FinalityFlow(signedTx, setOf(serviceHub.myInfo.legalIdentity, counterparty)))
+        subFlow(FinalityFlow(signedTx, setOf(serviceHub.legalIdentity.party, counterparty)))
         // Return the initial state
         return signedTx.tx.outRef<TradeApprovalContract.State>(0)
     }
@@ -161,7 +161,7 @@ class SubmitCompletionFlow(val ref: StateRef, val verdict: WorkflowState) : Flow
             "Input trade not modifiable ${latestRecord.state.data.state}"
         }
         // Check we are the correct Party to run the protocol. Note they will counter check this too.
-        require(latestRecord.state.data.counterparty == serviceHub.myInfo.legalIdentity) {
+        require(latestRecord.state.data.counterparty == serviceHub.legalIdentity.party) {
             "The counterparty must give the verdict"
         }
 
@@ -183,7 +183,7 @@ class SubmitCompletionFlow(val ref: StateRef, val verdict: WorkflowState) : Flow
                         latestRecord,
                         newState,
                         Command(TradeApprovalContract.Commands.Completed(),
-                                listOf(serviceHub.myInfo.legalIdentity.owningKey, latestRecord.state.data.source.owningKey)))
+                                listOf(serviceHub.legalIdentityKey, latestRecord.state.data.source.owningKey)))
         tx.setTimeWindow(serviceHub.clock.instant(), 60.seconds)
         // We can sign this transaction immediately as we have already checked all the fields and the decision
         // is ultimately a manual one from the caller.
@@ -226,7 +226,7 @@ class RecordCompletionFlow(val source: Party) : FlowLogic<Unit>() {
         // First we receive the verdict transaction signed by their single key
         val completeTx = receive<SignedTransaction>(source).unwrap {
             // Check the transaction is signed apart from our own key and the notary
-            it.verifySignaturesExcept(serviceHub.myInfo.legalIdentity.owningKey, it.tx.notary!!.owningKey)
+            it.verifySignaturesExcept(serviceHub.legalIdentityKey, it.tx.notary!!.owningKey)
             // Check the transaction data is correctly formed
             val ltx = it.toLedgerTransaction(serviceHub, false)
             ltx.verify()
@@ -237,7 +237,7 @@ class RecordCompletionFlow(val source: Party) : FlowLogic<Unit>() {
             // Check the context dependent parts of the transaction as the
             // Contract verify method must not use serviceHub queries.
             val state = ltx.outRef<TradeApprovalContract.State>(0)
-            require(state.state.data.source == serviceHub.myInfo.legalIdentity) {
+            require(state.state.data.source == serviceHub.legalIdentity.party) {
                 "Proposal not one of our original proposals"
             }
             require(state.state.data.counterparty == source) {

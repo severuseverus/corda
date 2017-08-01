@@ -93,7 +93,7 @@ class AttachmentSerializationTest {
 
     @InitiatingFlow
     private abstract class ClientLogic(server: MockNetwork.MockNode) : FlowLogic<ClientResult>() {
-        internal val server = server.info.legalIdentity
+        internal val server = server.services.legalIdentity.party
 
         @Suspendable
         internal fun communicate() {

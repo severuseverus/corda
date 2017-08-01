@@ -93,7 +93,7 @@ class CordaRPCOpsImplTest {
 
         // Tell the monitoring service node to issue some cash
         val anonymous = false
-        val recipient = aliceNode.info.legalIdentity
+        val recipient = aliceNode.services.legalIdentity.party
         val result = rpc.startFlow(::CashIssueFlow, Amount(quantity, GBP), ref, recipient, notaryNode.info.notaryIdentity, anonymous)
         mockNet.runNetwork()
 
@@ -112,7 +112,7 @@ class CordaRPCOpsImplTest {
 
         result.returnValue.getOrThrow()
         val expectedState = Cash.State(Amount(quantity,
-                Issued(aliceNode.info.legalIdentity.ref(ref), GBP)),
+                Issued(aliceNode.services.legalIdentity.party.ref(ref), GBP)),
                 recipient)
 
         // Query vault via RPC
@@ -141,14 +141,14 @@ class CordaRPCOpsImplTest {
         val result = rpc.startFlow(::CashIssueFlow,
                 100.DOLLARS,
                 OpaqueBytes(ByteArray(1, { 1 })),
-                aliceNode.info.legalIdentity,
+                aliceNode.services.legalIdentity.party,
                 notaryNode.info.notaryIdentity,
                 false
         )
 
         mockNet.runNetwork()
 
-        rpc.startFlow(::CashPaymentFlow, 100.DOLLARS, aliceNode.info.legalIdentity, anonymous)
+        rpc.startFlow(::CashPaymentFlow, 100.DOLLARS, aliceNode.services.legalIdentity.party, anonymous)
 
         mockNet.runNetwork()
 
@@ -182,7 +182,7 @@ class CordaRPCOpsImplTest {
                         require(stx.tx.outputs.size == 1)
                         val signaturePubKeys = stx.sigs.map { it.by }.toSet()
                         // Only Alice signed
-                        val aliceKey = aliceNode.info.legalIdentity.owningKey
+                        val aliceKey = aliceNode.services.legalIdentityKey
                         require(signaturePubKeys.size <= aliceKey.keys.size)
                         require(aliceKey.isFulfilledBy(signaturePubKeys))
                     },
@@ -192,7 +192,7 @@ class CordaRPCOpsImplTest {
                         require(stx.tx.outputs.size == 1)
                         val signaturePubKeys = stx.sigs.map { it.by }.toSet()
                         // Alice and Notary signed
-                        require(aliceNode.info.legalIdentity.owningKey.isFulfilledBy(signaturePubKeys))
+                        require(aliceNode.services.legalIdentityKey.isFulfilledBy(signaturePubKeys))
                         require(notaryNode.info.notaryIdentity.owningKey.isFulfilledBy(signaturePubKeys))
                     }
             )
@@ -237,7 +237,7 @@ class CordaRPCOpsImplTest {
             rpc.startFlow(::CashIssueFlow,
                     Amount(100, USD),
                     OpaqueBytes(ByteArray(1, { 1 })),
-                    aliceNode.info.legalIdentity,
+                    aliceNode.services.legalIdentity.party,
                     notaryNode.info.notaryIdentity,
                     false
             )

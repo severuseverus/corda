@@ -43,7 +43,7 @@ class IRSSimulation(networkSendManuallyPumped: Boolean, runAsync: Boolean, laten
 
     override fun startMainSimulation(): ListenableFuture<Unit> {
         val future = SettableFuture.create<Unit>()
-        om = JacksonSupport.createInMemoryMapper(InMemoryIdentityService((banks + regulators + networkMap).map { it.info.legalIdentityAndCert }, trustRoot = DUMMY_CA.certificate))
+        om = JacksonSupport.createInMemoryMapper(InMemoryIdentityService((banks + regulators + networkMap).map { it.info.legalIdentityAndCert2 }, trustRoot = DUMMY_CA.certificate)) //TODO
 
         startIRSDealBetween(0, 1).thenMatch({
             // Next iteration is a pause.
@@ -119,8 +119,8 @@ class IRSSimulation(networkSendManuallyPumped: Boolean, runAsync: Boolean, laten
         // have the convenient copy() method that'd let us make small adjustments. Instead they're partly mutable.
         // TODO: We should revisit this in post-Excalibur cleanup and fix, e.g. by introducing an interface.
         val irs = om.readValue<InterestRateSwap.State>(javaClass.classLoader.getResource("net/corda/irs/simulation/trade.json"))
-        irs.fixedLeg.fixedRatePayer = node1.info.legalIdentity
-        irs.floatingLeg.floatingRatePayer = node2.info.legalIdentity
+        irs.fixedLeg.fixedRatePayer = node1.services.legalIdentity.party
+        irs.floatingLeg.floatingRatePayer = node2.services.legalIdentity.party
 
         node1.registerInitiatedFlow(FixingFlow.Fixer::class.java)
         node2.registerInitiatedFlow(FixingFlow.Fixer::class.java)
@@ -147,7 +147,7 @@ class IRSSimulation(networkSendManuallyPumped: Boolean, runAsync: Boolean, laten
         showConsensusFor(listOf(node1, node2, regulators[0]))
 
         val instigator = StartDealFlow(
-                node2.info.legalIdentity,
+                node2.services.legalIdentity.party,
                 AutoOffer(notary.info.notaryIdentity, irs),
                 node1.services.legalIdentityKey)
         val instigatorTxFuture = node1.services.startFlow(instigator).resultFuture

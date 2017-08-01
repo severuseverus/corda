@@ -40,18 +40,18 @@ class InMemoryNetworkMapCacheTest {
         val entropy = BigInteger.valueOf(24012017L)
         val nodeA = mockNet.createNode(null, -1, MockNetwork.DefaultFactory, true, ALICE.name, null, entropy, ServiceInfo(NetworkMapService.type))
         val nodeB = mockNet.createNode(null, -1, MockNetwork.DefaultFactory, true, BOB.name, null, entropy, ServiceInfo(NetworkMapService.type))
-        assertEquals(nodeA.info.legalIdentity, nodeB.info.legalIdentity)
+        assertEquals(nodeA.services.legalIdentity.party, nodeB.services.legalIdentity.party)
 
         mockNet.runNetwork()
 
         // Node A currently knows only about itself, so this returns node A
-        assertEquals(nodeA.services.networkMapCache.getNodeByLegalIdentityKey(nodeA.info.legalIdentity.owningKey), nodeA.info)
+        assertEquals(nodeA.services.networkMapCache.getNodeByLegalIdentityKey(nodeA.services.legalIdentityKey), nodeA.info)
 
         nodeA.database.transaction {
             nodeA.services.networkMapCache.addNode(nodeB.info)
         }
         // The details of node B write over those for node A
-        assertEquals(nodeA.services.networkMapCache.getNodeByLegalIdentityKey(nodeA.info.legalIdentity.owningKey), nodeB.info)
+        assertEquals(nodeA.services.networkMapCache.getNodeByLegalIdentityKey(nodeA.services.legalIdentityKey), nodeB.info)
     }
 
     @Test
@@ -63,7 +63,7 @@ class InMemoryNetworkMapCacheTest {
         val expected = n1.info
 
         mockNet.runNetwork()
-        val actual = node0Cache.getNodeByLegalIdentity(n1.info.legalIdentity)
+        val actual = node0Cache.getNodeByLegalIdentity(n1.services.legalIdentity.party)
         assertEquals(expected, actual)
 
         // TODO: Should have a test case with anonymous lookup

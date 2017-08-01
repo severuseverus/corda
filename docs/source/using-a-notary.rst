@@ -63,7 +63,7 @@ We then sign the transaction, build and record it to our transaction storage:
 
 .. sourcecode:: kotlin
 
-   val mySigningKey: PublicKey = serviceHub.legalIdentityKey
+   val mySigningKey: PublicKey = serviceHub.legalIdentity.owningKey
    val issueTransaction = serviceHub.signInitialTransaction(issueTransaction, mySigningKey)
    serviceHub.recordTransactions(issueTransaction)
 

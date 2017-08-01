@@ -256,7 +256,7 @@ class CommercialPaperTestsGeneric {
 
         // BigCorp™ issues $10,000 of commercial paper, to mature in 30 days, owned initially by itself.
         val faceValue = 10000.DOLLARS `issued by` DUMMY_CASH_ISSUER
-        val issuance = bigCorpServices.myInfo.legalIdentity.ref(1)
+        val issuance = bigCorpServices.legalIdentity.party.ref(1)
         val issueBuilder = CommercialPaper().generateIssue(issuance, faceValue, TEST_TX_TIME + 30.days, DUMMY_NOTARY)
         issueBuilder.setTimeWindow(TEST_TX_TIME, 30.seconds)
         val issuePtx = bigCorpServices.signInitialTransaction(issueBuilder)

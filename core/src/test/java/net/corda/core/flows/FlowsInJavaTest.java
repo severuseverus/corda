@@ -33,7 +33,7 @@ public class FlowsInJavaTest {
     @Test
     public void suspendableActionInsideUnwrap() throws Exception {
         node2.registerInitiatedFlow(SendHelloAndThenReceive.class);
-        Future<String> result = node1.getServices().startFlow(new SendInUnwrapFlow(node2.getInfo().getLegalIdentity())).getResultFuture();
+        Future<String> result = node1.getServices().startFlow(new SendInUnwrapFlow(node2.getServices().getLegalIdentity().getParty())).getResultFuture();
         mockNet.runNetwork();
         assertThat(result.get()).isEqualTo("Hello");
     }

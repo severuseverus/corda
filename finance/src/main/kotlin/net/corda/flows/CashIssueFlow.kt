@@ -50,7 +50,7 @@ class CashIssueFlow(val amount: Amount<Currency>,
         val anonymousRecipient = txIdentities[recipient]?.party ?: recipient
         progressTracker.currentStep = GENERATING_TX
         val builder: TransactionBuilder = TransactionBuilder(notary)
-        val issuer = serviceHub.myInfo.legalIdentity.ref(issueRef)
+        val issuer = serviceHub.legalIdentity.party.ref(issueRef)
         val signers = Cash().generateIssue(builder, amount.issuedBy(issuer), anonymousRecipient, notary)
         progressTracker.currentStep = SIGNING_TX
         val tx = serviceHub.signInitialTransaction(builder, signers)

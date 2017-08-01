@@ -93,8 +93,12 @@ class CordaRPCOpsImpl(
         }
     }
 
-    override fun nodeIdentity(): NodeInfo {
+    override fun nodeInfo(): NodeInfo {
         return services.myInfo
+    }
+
+    override fun nodeMainIdentity(): Party {
+        return services.legalIdentity.party
     }
 
     override fun addVaultTransactionNote(txnId: SecureHash, txnNote: String) {

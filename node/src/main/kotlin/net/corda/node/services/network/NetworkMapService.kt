@@ -255,7 +255,7 @@ abstract class AbstractNetworkMapService(services: ServiceHubInternal,
         // in on different threads, there is no risk of a race condition while checking
         // sequence numbers.
         val registrationInfo = try {
-            nodeRegistrations.compute(node.legalIdentityAndCert) { _, existing: NodeRegistrationInfo? ->
+            nodeRegistrations.compute(node.legalIdentityAndCert2) { _, existing: NodeRegistrationInfo? -> // TODO another place it breaks
                 require(!((existing == null || existing.reg.type == REMOVE) && change.type == REMOVE)) {
                     "Attempting to de-register unknown node"
                 }
@@ -345,7 +345,7 @@ data class NodeRegistration(val node: NodeInfo, val serial: Long, val type: AddO
 class WireNodeRegistration(raw: SerializedBytes<NodeRegistration>, sig: DigitalSignature.WithKey) : SignedData<NodeRegistration>(raw, sig) {
     @Throws(IllegalArgumentException::class)
     override fun verifyData(data: NodeRegistration) {
-        require(data.node.legalIdentity.owningKey.isFulfilledBy(sig.by))
+        require(data.node.legalIdentityAndCert2.owningKey.isFulfilledBy(sig.by)) // TODO by one of node's identities
     }
 }
 

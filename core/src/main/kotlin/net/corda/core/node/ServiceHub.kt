@@ -2,6 +2,7 @@ package net.corda.core.node
 
 import net.corda.core.contracts.*
 import net.corda.core.crypto.DigitalSignature
+import net.corda.core.identity.PartyAndCertificate
 import net.corda.core.node.services.*
 import net.corda.core.serialization.SerializeAsToken
 import net.corda.core.transactions.SignedTransaction
@@ -108,6 +109,9 @@ interface ServiceHub : ServicesForResolution {
         }
     }
 
+    /** Node's primary identity */
+    val legalIdentity: PartyAndCertificate
+
     /**
      * Helper property to shorten code for fetching the the [PublicKey] portion of the
      * Node's primary signing identity.
@@ -117,7 +121,7 @@ interface ServiceHub : ServicesForResolution {
      * If the key is actually a CompositeKey, the first leaf key hosted on this node
      * will be used to create the signature.
      */
-    val legalIdentityKey: PublicKey get() = this.myInfo.legalIdentity.owningKey
+    val legalIdentityKey: PublicKey get() = legalIdentity.owningKey
 
     /**
      * Helper property to shorten code for fetching the the [PublicKey] portion of the

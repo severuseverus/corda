@@ -63,8 +63,8 @@ class LedgerTransactionQueryTests : TestDependencyInjectionBase() {
             tx.addInputState(makeDummyStateAndRef(i.toString()))
             tx.addOutputState(makeDummyState(i))
             tx.addOutputState(makeDummyState(i.toString()))
-            tx.addCommand(Commands.Cmd1(i), listOf(services.myInfo.legalIdentity.owningKey))
-            tx.addCommand(Commands.Cmd2(i), listOf(services.myInfo.legalIdentity.owningKey))
+            tx.addCommand(Commands.Cmd1(i), listOf(services.legalIdentityKey))
+            tx.addCommand(Commands.Cmd2(i), listOf(services.legalIdentityKey))
         }
         return tx.toLedgerTransaction(services)
     }

@@ -57,7 +57,7 @@ class WorkflowTransactionBuildTutorialTest {
         // Setup a vault subscriber to wait for successful upload of the proposal to NodeB
         val nodeBVaultUpdate = nodeB.services.vaultService.updates.toFuture()
         // Kick of the proposal flow
-        val flow1 = nodeA.services.startFlow(SubmitTradeApprovalFlow("1234", nodeB.info.legalIdentity))
+        val flow1 = nodeA.services.startFlow(SubmitTradeApprovalFlow("1234", nodeB.services.legalIdentity.party))
         // Wait for the flow to finish
         val proposalRef = flow1.resultFuture.getOrThrow()
         val proposalLinearId = proposalRef.state.data.linearId
@@ -73,8 +73,8 @@ class WorkflowTransactionBuildTutorialTest {
         // Confirm the state as as expected
         assertEquals(WorkflowState.NEW, proposalRef.state.data.state)
         assertEquals("1234", proposalRef.state.data.tradeId)
-        assertEquals(nodeA.info.legalIdentity, proposalRef.state.data.source)
-        assertEquals(nodeB.info.legalIdentity, proposalRef.state.data.counterparty)
+        assertEquals(nodeA.services.legalIdentity.party, proposalRef.state.data.source)
+        assertEquals(nodeB.services.legalIdentity.party, proposalRef.state.data.counterparty)
         assertEquals(proposalRef, latestFromA)
         assertEquals(proposalRef, latestFromB)
         // Setup a vault subscriber to pause until the final update is in NodeA and NodeB
@@ -97,8 +97,8 @@ class WorkflowTransactionBuildTutorialTest {
         // Confirm the state is as expected
         assertEquals(WorkflowState.APPROVED, completedRef.state.data.state)
         assertEquals("1234", completedRef.state.data.tradeId)
-        assertEquals(nodeA.info.legalIdentity, completedRef.state.data.source)
-        assertEquals(nodeB.info.legalIdentity, completedRef.state.data.counterparty)
+        assertEquals(nodeA.services.legalIdentity.party, completedRef.state.data.source)
+        assertEquals(nodeB.services.legalIdentity.party, completedRef.state.data.counterparty)
         assertEquals(completedRef, finalFromA)
         assertEquals(completedRef, finalFromB)
     }

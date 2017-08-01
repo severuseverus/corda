@@ -106,11 +106,11 @@ abstract class ArtemisMessagingComponent : SingletonSerializeAsToken() {
         }
     }
 
-    fun getArtemisPeerAddress(nodeInfo: NodeInfo): ArtemisPeerAddress {
+    fun getArtemisPeerAddress(nodeInfo: NodeInfo): ArtemisPeerAddress { // TODO should pass party?
         return if (nodeInfo.advertisedServices.any { it.info.type == ServiceType.networkMap }) {
             NetworkMapAddress(nodeInfo.addresses.first())
         } else {
-            NodeAddress.asPeer(nodeInfo.legalIdentity.owningKey, nodeInfo.addresses.first())
+            NodeAddress.asPeer(nodeInfo.legalIdentityAndCert2.owningKey, nodeInfo.addresses.first()) // TODO another problem
         }
     }
 }

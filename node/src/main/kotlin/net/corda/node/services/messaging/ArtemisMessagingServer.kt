@@ -302,7 +302,7 @@ class ArtemisMessagingServer(override val config: NodeConfiguration,
         fun deployBridgeToPeer(nodeInfo: NodeInfo) {
             log.debug("Deploying bridge for $queueName to $nodeInfo")
             val address = nodeInfo.addresses.first() // TODO Load balancing.
-            deployBridge(queueName, address, nodeInfo.legalIdentity.name)
+            deployBridge(queueName, address, nodeInfo.legalIdentityAndCert2.name) // TODO problems here
         }
 
         when {
@@ -350,7 +350,7 @@ class ArtemisMessagingServer(override val config: NodeConfiguration,
         fun deployBridges(node: NodeInfo) {
             gatherAddresses(node)
                     .filter { queueExists(it.queueName) && !bridgeExists(it.bridgeName) }
-                    .forEach { deployBridge(it, node.legalIdentity.name) }
+                    .forEach { deployBridge(it, node.legalIdentityAndCert2.name) } // TODO problem here
         }
 
         fun destroyBridges(node: NodeInfo) {

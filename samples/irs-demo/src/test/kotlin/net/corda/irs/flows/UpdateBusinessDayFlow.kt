@@ -55,13 +55,13 @@ object UpdateBusinessDayFlow {
          */
         private fun getRecipients(): Iterable<NodeInfo> {
             val notaryNodes = serviceHub.networkMapCache.notaryNodes
-            val partyNodes = (serviceHub.networkMapCache.partyNodes - notaryNodes).sortedBy { it.legalIdentity.name.toString() }
+            val partyNodes = (serviceHub.networkMapCache.partyNodes - notaryNodes).sortedBy { it.legalIdentityAndCert2.name.toString() } // TODO change that
             return notaryNodes + partyNodes
         }
 
         @Suspendable
         private fun doNextRecipient(recipient: NodeInfo) {
-            send(recipient.legalIdentity, UpdateBusinessDayMessage(date))
+            send(recipient.legalIdentityAndCert2.party, UpdateBusinessDayMessage(date)) // TODO change
         }
     }
 }

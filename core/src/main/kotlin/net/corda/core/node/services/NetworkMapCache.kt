@@ -76,7 +76,7 @@ interface NetworkMapCache {
     fun getNodeByLegalIdentity(party: AbstractParty): NodeInfo?
 
     /** Look up the node info for a legal name. */
-    fun getNodeByLegalName(principal: X500Name): NodeInfo? = partyNodes.singleOrNull { it.legalIdentity.name == principal }
+    fun getNodeByLegalName(principal: X500Name): NodeInfo? = partyNodes.singleOrNull { it.legalIdentityAndCert2.name == principal } // TODO rewrite it to use all identities!
 
     /**
      * In general, nodes can advertise multiple identities: a legal identity, and separate identities for each of

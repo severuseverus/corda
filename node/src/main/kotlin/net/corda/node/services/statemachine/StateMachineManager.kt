@@ -276,7 +276,7 @@ class StateMachineManager(val serviceHub: ServiceHubInternal,
 
     private fun onSessionMessage(message: ReceivedMessage) {
         val sessionMessage = message.data.deserialize<SessionMessage>()
-        val sender = serviceHub.networkMapCache.getNodeByLegalName(message.peer)?.legalIdentity
+        val sender = serviceHub.networkMapCache.getNodeByLegalName(message.peer)?.legalIdentityAndCert2?.party // TODO this should return party
         if (sender != null) {
             when (sessionMessage) {
                 is ExistingSessionMessage -> onExistingSessionMessage(sessionMessage, sender)

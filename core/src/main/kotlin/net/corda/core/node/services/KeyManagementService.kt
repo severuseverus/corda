@@ -28,6 +28,7 @@ interface KeyManagementService {
      * [X509Certificate] and adds it to the identity service.
      *
      * @param identity identity to generate a key and certificate for. Must be an identity this node has CA privileges for.
+     *  If none is provided
      * @param revocationEnabled whether to check revocation status of certificates in the certificate path.
      * @return X.509 certificate and path to the trust root.
      */

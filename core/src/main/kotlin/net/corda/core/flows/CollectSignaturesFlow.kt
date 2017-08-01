@@ -5,6 +5,7 @@ import net.corda.core.crypto.DigitalSignature
 import net.corda.core.crypto.isFulfilledBy
 import net.corda.core.crypto.toBase58String
 import net.corda.core.identity.Party
+import net.corda.core.identity.PartyAndCertificate
 import net.corda.core.node.ServiceHub
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.WireTransaction
@@ -49,7 +50,7 @@ import java.security.PublicKey
  *     builder.toWireTransaction().toLedgerTransaction(serviceHub).verify()
  *
  *     // Transaction creator signs transaction.
- *     val ptx = builder.signWith(serviceHub.legalIdentityKey).toSignedTransaction(false)
+ *     val ptx = builder.signWith(serviceHub.legalIdentity.owningKey).toSignedTransaction(false)
  *
  *     // Call to CollectSignaturesFlow.
  *     // The returned signed transaction will have all signatures appended apart from the notary's.
@@ -76,7 +77,7 @@ class CollectSignaturesFlow(val partiallySignedTx: SignedTransaction,
         // This will break if a party uses anything other than their legalIdentityKey.
         // Check the signatures which have already been provided and that the transaction is valid.
         // Usually just the Initiator and possibly an oracle would have signed at this point.
-        val myKey = serviceHub.myInfo.legalIdentity.owningKey
+        val myKey = serviceHub.legalIdentityKey
         val signed = partiallySignedTx.sigs.map { it.by }
         val notSigned = partiallySignedTx.tx.requiredSigningKeys - signed
 
@@ -117,7 +118,7 @@ class CollectSignaturesFlow(val partiallySignedTx: SignedTransaction,
         // TODO: Revisit when IdentityService supports resolution of a (possibly random) public key to a legal identity key.
         val partyNode = serviceHub.networkMapCache.getNodeByLegalIdentityKey(it)
                 ?: throw IllegalStateException("Party ${it.toBase58String()} not found on the network.")
-        partyNode.legalIdentity
+        partyNode.legalIdentityAndCert2.party // TODO query should return parties
     }
 
     // DOCSTART 1
@@ -248,9 +249,10 @@ abstract class SignTransactionFlow(val otherParty: Party,
      */
     @Suspendable abstract protected fun checkTransaction(stx: SignedTransaction)
 
+    // TODO This repeats already in AbstractReplacementFlow
     @Suspendable private fun checkMySignatureRequired(stx: SignedTransaction) {
         // TODO: Revisit when key management is properly fleshed out.
-        val myKey = serviceHub.myInfo.legalIdentity.owningKey
+        val myKey = serviceHub.legalIdentityKey
         require(myKey in stx.tx.requiredSigningKeys) {
             "Party is not a participant for any of the input states of transaction ${stx.id}"
         }

@@ -66,7 +66,7 @@ class IssuerFlowTest(val anonymous: Boolean) {
 
             // using default IssueTo Party Reference
             val issuerResult = runIssuerAndIssueRequester(bankOfCordaNode, bankClientNode, 1000000.DOLLARS,
-                    bankClientNode.info.legalIdentity, OpaqueBytes.of(123), notary)
+                    bankClientNode.services.legalIdentity.party, OpaqueBytes.of(123), notary)
             issuerResult.get()
 
             Pair(vaultUpdatesBoc, vaultUpdatesBankClient)
@@ -108,7 +108,7 @@ class IssuerFlowTest(val anonymous: Boolean) {
         // try to issue an amount of a restricted currency
         assertFailsWith<FlowException> {
             runIssuerAndIssueRequester(bankOfCordaNode, bankClientNode, Amount(100000L, currency("BRL")),
-                    bankClientNode.info.legalIdentity, OpaqueBytes.of(123), notary).getOrThrow()
+                    bankClientNode.services.legalIdentity.party, OpaqueBytes.of(123), notary).getOrThrow()
         }
     }
 
@@ -121,7 +121,7 @@ class IssuerFlowTest(val anonymous: Boolean) {
 
             // using default IssueTo Party Reference
             runIssuerAndIssueRequester(bankOfCordaNode, bankOfCordaNode, 1000000.DOLLARS,
-                    bankOfCordaNode.info.legalIdentity, OpaqueBytes.of(123), notary).getOrThrow()
+                    bankOfCordaNode.services.legalIdentity.party, OpaqueBytes.of(123), notary).getOrThrow()
             vaultUpdatesBoc
         }
 
@@ -145,7 +145,7 @@ class IssuerFlowTest(val anonymous: Boolean) {
         val amounts = calculateRandomlySizedAmounts(10000.DOLLARS, 10, 10, Random())
         val handles = amounts.map { pennies ->
             runIssuerAndIssueRequester(bankOfCordaNode, bankClientNode, Amount(pennies, amount.token),
-                    bankClientNode.info.legalIdentity, OpaqueBytes.of(123), notary)
+                    bankClientNode.services.legalIdentity.party, OpaqueBytes.of(123), notary)
         }
         handles.forEach {
             require(it.get().stx is SignedTransaction)
@@ -159,7 +159,7 @@ class IssuerFlowTest(val anonymous: Boolean) {
                                            ref: OpaqueBytes,
                                            notaryParty: Party): ListenableFuture<AbstractCashFlow.Result> {
         val issueToPartyAndRef = issueToParty.ref(ref)
-        val issueRequest = IssuanceRequester(amount, issueToParty, issueToPartyAndRef.reference, issuerNode.info.legalIdentity, notaryParty,
+        val issueRequest = IssuanceRequester(amount, issueToParty, issueToPartyAndRef.reference, issuerNode.services.legalIdentity.party, notaryParty,
                 anonymous)
         return issueToNode.services.startFlow(issueRequest).resultFuture
     }

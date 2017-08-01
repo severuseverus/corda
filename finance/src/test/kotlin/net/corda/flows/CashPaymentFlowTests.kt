@@ -35,7 +35,7 @@ class CashPaymentFlowTests {
         notaryNode = nodes.notaryNode
         bankOfCordaNode = nodes.partyNodes[0]
         notary = notaryNode.info.notaryIdentity
-        bankOfCorda = bankOfCordaNode.info.legalIdentity
+        bankOfCorda = bankOfCordaNode.services.legalIdentity.party
 
         val future = bankOfCordaNode.services.startFlow(CashIssueFlow(initialBalance, ref,
                 bankOfCorda,
@@ -51,7 +51,7 @@ class CashPaymentFlowTests {
 
     @Test
     fun `pay some cash`() {
-        val payTo = notaryNode.info.legalIdentity
+        val payTo = notaryNode.services.legalIdentity.party
         val expectedPayment = 500.DOLLARS
         val expectedChange = 1500.DOLLARS
 
@@ -91,7 +91,7 @@ class CashPaymentFlowTests {
 
     @Test
     fun `pay more than we have`() {
-        val payTo = notaryNode.info.legalIdentity
+        val payTo = notaryNode.services.legalIdentity.party
         val expected = 4000.DOLLARS
         val future = bankOfCordaNode.services.startFlow(CashPaymentFlow(expected,
                 payTo)).resultFuture
@@ -103,7 +103,7 @@ class CashPaymentFlowTests {
 
     @Test
     fun `pay zero cash`() {
-        val payTo = notaryNode.info.legalIdentity
+        val payTo = notaryNode.services.legalIdentity.party
         val expected = 0.DOLLARS
         val future = bankOfCordaNode.services.startFlow(CashPaymentFlow(expected,
                 payTo)).resultFuture

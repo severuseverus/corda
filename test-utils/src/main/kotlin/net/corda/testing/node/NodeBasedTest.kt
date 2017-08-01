@@ -104,7 +104,7 @@ abstract class NodeBasedTest : TestDependencyInjectionBase() {
                 mapOf(
                         "networkMapService" to mapOf(
                                 "address" to networkMapNode.configuration.p2pAddress.toString(),
-                                "legalName" to networkMapNode.info.legalIdentity.name.toString()
+                                "legalName" to networkMapNode.services.legalIdentity.name.toString()
                         )
                 ) + configOverrides
         )

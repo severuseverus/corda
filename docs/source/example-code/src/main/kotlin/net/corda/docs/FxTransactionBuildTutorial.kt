@@ -86,7 +86,7 @@ private fun prepareOurInputsAndOutputs(serviceHub: ServiceHub, request: FxReques
     if (residual > 0L) {
         // Build an output state for the residual change back to us
         val residualAmount = Amount(residual, sellAmount.token)
-        val residualOutput = Cash.State(residualAmount, serviceHub.myInfo.legalIdentity)
+        val residualOutput = Cash.State(residualAmount, serviceHub.legalIdentity.party)
         return FxResponse(inputs, listOf(transferedFundsOutput, residualOutput))
     } else {
         return FxResponse(inputs, listOf(transferedFundsOutput))
@@ -107,11 +107,11 @@ class ForeignExchangeFlow(val tradeId: String,
         // Select correct sides of the Fx exchange to query for.
         // Specifically we own the assets we wish to sell.
         // Also prepare the other side query
-        val (localRequest, remoteRequest) = if (baseCurrencySeller == serviceHub.myInfo.legalIdentity) {
+        val (localRequest, remoteRequest) = if (baseCurrencySeller == serviceHub.legalIdentity.party) {
             val local = FxRequest(tradeId, baseCurrencyAmount, baseCurrencySeller, baseCurrencyBuyer)
             val remote = FxRequest(tradeId, quoteCurrencyAmount, baseCurrencyBuyer, baseCurrencySeller)
             Pair(local, remote)
-        } else if (baseCurrencyBuyer == serviceHub.myInfo.legalIdentity) {
+        } else if (baseCurrencyBuyer == serviceHub.legalIdentity.party) {
             val local = FxRequest(tradeId, quoteCurrencyAmount, baseCurrencyBuyer, baseCurrencySeller)
             val remote = FxRequest(tradeId, baseCurrencyAmount, baseCurrencySeller, baseCurrencyBuyer)
             Pair(local, remote)
@@ -141,7 +141,7 @@ class ForeignExchangeFlow(val tradeId: String,
                     >= remoteRequestWithNotary.amount.quantity) {
                 "the provided inputs don't provide sufficient funds"
             }
-            require(it.outputs.filter { it.owner == serviceHub.myInfo.legalIdentity }.
+            require(it.outputs.filter { it.owner == serviceHub.legalIdentity.party }.
                     map { it.amount.quantity }.sum() == remoteRequestWithNotary.amount.quantity) {
                 "the provided outputs don't provide the request quantity"
             }
@@ -213,7 +213,7 @@ class ForeignExchangeRemoteFlow(val source: Party) : FlowLogic<Unit>() {
             // the lifecycle of the Fx trades which would be included in the transaction
 
             // Check request is for us
-            require(serviceHub.myInfo.legalIdentity == it.owner) {
+            require(serviceHub.legalIdentity.party == it.owner) {
                 "Request does not include the correct counterparty"
             }
             require(source == it.counterparty) {

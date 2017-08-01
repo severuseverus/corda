@@ -38,9 +38,9 @@ class FinalityFlowTests {
 
     @Test
     fun `finalise a simple transaction`() {
-        val amount = Amount(1000, Issued(nodeA.info.legalIdentity.ref(0), GBP))
+        val amount = Amount(1000, Issued(nodeA.services.legalIdentity.party.ref(0), GBP))
         val builder = TransactionBuilder(notary)
-        Cash().generateIssue(builder, amount, nodeB.info.legalIdentity, notary)
+        Cash().generateIssue(builder, amount, nodeB.services.legalIdentity.party, notary)
         val stx = nodeA.services.signInitialTransaction(builder)
         val flow = nodeA.services.startFlow(FinalityFlow(stx))
         mockNet.runNetwork()

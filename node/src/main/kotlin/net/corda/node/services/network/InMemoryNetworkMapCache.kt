@@ -129,7 +129,7 @@ open class InMemoryNetworkMapCache(private val serviceHub: ServiceHub?) : Single
 
     override fun addNode(node: NodeInfo) {
         synchronized(_changed) {
-            val previousNode = registeredNodes.put(node.legalIdentity.owningKey, node)
+            val previousNode = registeredNodes.put(node.legalIdentityAndCert2.owningKey, node) // TODO indexing will change
             if (previousNode == null) {
                 changePublisher.onNext(MapChange.Added(node))
             } else if (previousNode != node) {
@@ -140,7 +140,7 @@ open class InMemoryNetworkMapCache(private val serviceHub: ServiceHub?) : Single
 
     override fun removeNode(node: NodeInfo) {
         synchronized(_changed) {
-            registeredNodes.remove(node.legalIdentity.owningKey)
+            registeredNodes.remove(node.legalIdentityAndCert2.owningKey) // TODO indexing will change
             changePublisher.onNext(MapChange.Removed(node))
         }
     }

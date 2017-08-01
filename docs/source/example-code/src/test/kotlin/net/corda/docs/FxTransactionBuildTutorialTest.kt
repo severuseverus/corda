@@ -47,7 +47,7 @@ class FxTransactionBuildTutorialTest {
         // Use NodeA as issuer and create some dollars
         val flowHandle1 = nodeA.services.startFlow(CashIssueFlow(DOLLARS(1000),
                 OpaqueBytes.of(0x01),
-                nodeA.info.legalIdentity,
+                nodeA.services.legalIdentity.party,
                 notaryNode.info.notaryIdentity,
                 false))
         // Wait for the flow to stop and print
@@ -57,7 +57,7 @@ class FxTransactionBuildTutorialTest {
         // Using NodeB as Issuer create some pounds.
         val flowHandle2 = nodeB.services.startFlow(CashIssueFlow(POUNDS(1000),
                 OpaqueBytes.of(0x01),
-                nodeB.info.legalIdentity,
+                nodeB.services.legalIdentity.party,
                 notaryNode.info.notaryIdentity,
                 false))
         // Wait for flow to come to an end and print
@@ -70,10 +70,10 @@ class FxTransactionBuildTutorialTest {
 
         // Now run the actual Fx exchange
         val doIt = nodeA.services.startFlow(ForeignExchangeFlow("trade1",
-                POUNDS(100).issuedBy(nodeB.info.legalIdentity.ref(0x01)),
-                DOLLARS(200).issuedBy(nodeA.info.legalIdentity.ref(0x01)),
-                nodeA.info.legalIdentity,
-                nodeB.info.legalIdentity))
+                POUNDS(100).issuedBy(nodeB.services.legalIdentity.party.ref(0x01)),
+                DOLLARS(200).issuedBy(nodeA.services.legalIdentity.party.ref(0x01)),
+                nodeA.services.legalIdentity.party,
+                nodeB.services.legalIdentity.party))
         // wait for the flow to finish and the vault updates to be done
         doIt.resultFuture.getOrThrow()
         // Get the balances when the vault updates

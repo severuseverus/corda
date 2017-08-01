@@ -31,8 +31,8 @@ class MockNetworkMapCache(serviceHub: ServiceHub) : InMemoryNetworkMapCache(serv
     init {
         val mockNodeA = NodeInfo(listOf(BANK_C_ADDR), BANK_C, NonEmptySet.of(BANK_C), 1)
         val mockNodeB = NodeInfo(listOf(BANK_D_ADDR), BANK_D, NonEmptySet.of(BANK_D), 1)
-        registeredNodes[mockNodeA.legalIdentity.owningKey] = mockNodeA
-        registeredNodes[mockNodeB.legalIdentity.owningKey] = mockNodeB
+        registeredNodes[BANK_C.owningKey] = mockNodeA
+        registeredNodes[BANK_D.owningKey] = mockNodeB
         runWithoutMapService()
     }
 
@@ -42,7 +42,7 @@ class MockNetworkMapCache(serviceHub: ServiceHub) : InMemoryNetworkMapCache(serv
      */
     @VisibleForTesting
     fun addRegistration(node: NodeInfo) {
-        registeredNodes[node.legalIdentity.owningKey] = node
+        registeredNodes[node.legalIdentityAndCert2.owningKey] = node // TODO it isn't used at all
     }
 
     /**

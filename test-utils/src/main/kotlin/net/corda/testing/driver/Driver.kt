@@ -716,7 +716,7 @@ class DriverDSL(
             return nodeAndThreadFuture.flatMap { (node, thread) ->
                 establishRpc(nodeConfiguration.p2pAddress, nodeConfiguration, SettableFuture.create()).flatMap { rpc ->
                     rpc.waitUntilRegisteredWithNetworkMap().map {
-                        NodeHandle.InProcess(rpc.nodeIdentity(), rpc, nodeConfiguration, webAddress, node, thread)
+                        NodeHandle.InProcess(rpc.nodeInfo(), rpc, nodeConfiguration, webAddress, node, thread)
                     }
                 }
             }
@@ -739,7 +739,7 @@ class DriverDSL(
                             throw processDeathFuture.getOrThrow()
                         }
                         processDeathFuture.cancel(false)
-                        NodeHandle.OutOfProcess(rpc.nodeIdentity(), rpc, nodeConfiguration, webAddress, debugPort, process)
+                        NodeHandle.OutOfProcess(rpc.nodeInfo(), rpc, nodeConfiguration, webAddress, debugPort, process)
                     }
                 }
             }

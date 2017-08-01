@@ -55,13 +55,13 @@ class ScheduledFlowTests {
         @Suspendable
         override fun call() {
             val scheduledState = ScheduledState(serviceHub.clock.instant(),
-                    serviceHub.myInfo.legalIdentity, destination)
+                    serviceHub.legalIdentity.party, destination)
 
             val notary = serviceHub.networkMapCache.getAnyNotary()
             val builder = TransactionBuilder(notary)
             builder.withItems(scheduledState)
             val tx = serviceHub.signInitialTransaction(builder)
-            subFlow(FinalityFlow(tx, setOf(serviceHub.myInfo.legalIdentity)))
+            subFlow(FinalityFlow(tx, setOf(serviceHub.legalIdentity.party)))
         }
     }
 
@@ -72,7 +72,7 @@ class ScheduledFlowTests {
             val state = serviceHub.toStateAndRef<ScheduledState>(stateRef)
             val scheduledState = state.state.data
             // Only run flow over states originating on this node
-            if (scheduledState.source != serviceHub.myInfo.legalIdentity) {
+            if (scheduledState.source != serviceHub.legalIdentity.party) {
                 return
             }
             require(!scheduledState.processed) { "State should not have been previously processed" }
@@ -111,7 +111,7 @@ class ScheduledFlowTests {
                     countScheduledFlows++
             }
         }
-        nodeA.services.startFlow(InsertInitialStateFlow(nodeB.info.legalIdentity))
+        nodeA.services.startFlow(InsertInitialStateFlow(nodeB.services.legalIdentity.party))
         mockNet.waitQuiescent()
         val stateFromA = nodeA.database.transaction {
             nodeA.services.vaultService.linearHeadsOfType<ScheduledState>().values.first()
@@ -128,8 +128,8 @@ class ScheduledFlowTests {
     fun `run a whole batch of scheduled flows`() {
         val N = 100
         for (i in 0..N - 1) {
-            nodeA.services.startFlow(InsertInitialStateFlow(nodeB.info.legalIdentity))
-            nodeB.services.startFlow(InsertInitialStateFlow(nodeA.info.legalIdentity))
+            nodeA.services.startFlow(InsertInitialStateFlow(nodeB.services.legalIdentity.party))
+            nodeB.services.startFlow(InsertInitialStateFlow(nodeA.services.legalIdentity.party))
         }
         mockNet.waitQuiescent()
         val statesFromA = nodeA.database.transaction {

@@ -435,10 +435,10 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
     fun `is ownable state relevant`() {
         val service = (services.vaultService as NodeVaultService)
         val amount = Amount(1000, Issued(BOC.ref(1), GBP))
-        val wellKnownCash = Cash.State(amount, services.myInfo.legalIdentity)
+        val wellKnownCash = Cash.State(amount, services.legalIdentity.party)
         assertTrue { service.isRelevant(wellKnownCash, services.keyManagementService.keys) }
 
-        val anonymousIdentity = services.keyManagementService.freshKeyAndCert(services.myInfo.legalIdentityAndCert, false)
+        val anonymousIdentity = services.keyManagementService.freshKeyAndCert(services.legalIdentity, false)
         val anonymousCash = Cash.State(amount, anonymousIdentity.party)
         assertTrue { service.isRelevant(anonymousCash, services.keyManagementService.keys) }
 
@@ -456,14 +456,14 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
             service.updates.subscribe(this)
         }
 
-        val anonymousIdentity = services.keyManagementService.freshKeyAndCert(services.myInfo.legalIdentityAndCert, false)
+        val anonymousIdentity = services.keyManagementService.freshKeyAndCert(services.legalIdentity, false)
         val thirdPartyIdentity = AnonymousParty(generateKeyPair().public)
         val amount = Amount(1000, Issued(BOC.ref(1), GBP))
 
         // Issue then move some cash
-        val issueTx = TransactionBuilder(services.myInfo.legalIdentity).apply {
+        val issueTx = TransactionBuilder(services.legalIdentity.party).apply {
             Cash().generateIssue(this,
-                    amount, anonymousIdentity.party, services.myInfo.legalIdentity)
+                    amount, anonymousIdentity.party, services.legalIdentity.party)
         }.toWireTransaction()
         val cashState = StateAndRef(issueTx.outputs.single(), StateRef(issueTx.id, 0))
 
@@ -471,7 +471,7 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
         val expectedIssueUpdate = Vault.Update(emptySet(), setOf(cashState), null)
 
         database.transaction {
-            val moveTx = TransactionBuilder(services.myInfo.legalIdentity).apply {
+            val moveTx = TransactionBuilder(services.legalIdentity.party).apply {
                 service.generateSpend(this, Amount(1000, GBP), thirdPartyIdentity)
             }.toWireTransaction()
             service.notify(moveTx)
@@ -485,13 +485,13 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
     @Test
     fun `correct updates are generated when changing notaries`() {
         val service = (services.vaultService as NodeVaultService)
-        val notary = services.myInfo.legalIdentity
+        val notary = services.legalIdentity.party
 
         val vaultSubscriber = TestSubscriber<Vault.Update<*>>().apply {
             service.updates.subscribe(this)
         }
 
-        val anonymousIdentity = services.keyManagementService.freshKeyAndCert(services.myInfo.legalIdentityAndCert, false)
+        val anonymousIdentity = services.keyManagementService.freshKeyAndCert(services.legalIdentity, false)
         val thirdPartyIdentity = AnonymousParty(generateKeyPair().public)
         val amount = Amount(1000, Issued(BOC.ref(1), GBP))
 
