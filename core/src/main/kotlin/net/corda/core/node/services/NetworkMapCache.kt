@@ -45,7 +45,7 @@ interface NetworkMapCache {
     /** Tracks changes to the network map cache */
     val changed: Observable<MapChange>
     /** Future to track completion of the NetworkMapService registration. */
-    val nodeReady: ListenableFuture<Unit>
+    val nodeReady: ListenableFuture<Unit> // TODO Replace Unit with *.
 
     /**
      * Atomically get the current party nodes and a stream of updates. Note that the Observable buffers updates until the

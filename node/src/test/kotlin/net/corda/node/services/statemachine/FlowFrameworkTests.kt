@@ -31,7 +31,6 @@ import net.corda.core.utilities.unwrap
 import net.corda.flows.CashIssueFlow
 import net.corda.flows.CashPaymentFlow
 import net.corda.node.internal.InitiatedFlowFactory
-import net.corda.node.services.network.InMemoryNetworkMapCache
 import net.corda.node.services.network.NetworkMapService
 import net.corda.node.services.persistence.checkpoints
 import net.corda.node.services.transactions.ValidatingNotaryService

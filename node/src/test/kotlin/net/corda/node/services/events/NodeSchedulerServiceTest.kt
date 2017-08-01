@@ -12,7 +12,7 @@ import net.corda.core.serialization.SingletonSerializeAsToken
 import net.corda.testing.ALICE_KEY
 import net.corda.testing.DUMMY_CA
 import net.corda.testing.DUMMY_NOTARY
-import net.corda.node.services.MockServiceHubInternal
+import net.corda.node.testing.MockServiceHubInternal
 import net.corda.node.services.identity.InMemoryIdentityService
 import net.corda.node.services.persistence.DBCheckpointStorage
 import net.corda.node.services.statemachine.FlowLogicRefFactoryImpl
