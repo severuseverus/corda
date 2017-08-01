@@ -35,15 +35,6 @@ class CordaPersistence(var dataSource: HikariDataSource, databaseProperties: Pro
         return DatabaseTransactionManager.currentOrNew(transactionIsolationLevel)
     }
 
-    fun <T> isolatedTransaction(block: DatabaseTransaction.() -> T): T {
-        val context = DatabaseTransactionManager.setThreadLocalTx(null)
-        return try {
-            transaction(block)
-        } finally {
-            DatabaseTransactionManager.restoreThreadLocalTx(context)
-        }
-    }
-
     fun <T> transaction(statement: DatabaseTransaction.() -> T): T {
         DatabaseTransactionManager.dataSource = this
         return transaction(transactionIsolationLevel, 3, statement)
