@@ -213,7 +213,7 @@ class CommercialPaperTestsGeneric {
     fun `issue move and then redeem`() {
         initialiseTestSerialization()
         val dataSourcePropsAlice = makeTestDataSourceProperties()
-        val databaseAlice = configureDatabase(dataSourcePropsAlice, makeTestDatabaseProperties())
+        val databaseAlice = configureDatabase(dataSourcePropsAlice,  databaseProperties = makeTestDatabaseProperties())
         databaseAlice.transaction {
 
             aliceServices = object : MockServices(ALICE_KEY) {
@@ -232,7 +232,7 @@ class CommercialPaperTestsGeneric {
         }
 
         val dataSourcePropsBigCorp = makeTestDataSourceProperties()
-        val databaseBigCorp = configureDatabase(dataSourcePropsBigCorp, makeTestDatabaseProperties())
+        val databaseBigCorp = configureDatabase(dataSourcePropsBigCorp, databaseProperties = makeTestDatabaseProperties())
         databaseBigCorp.transaction {
 
             bigCorpServices = object : MockServices(BIG_CORP_KEY) {

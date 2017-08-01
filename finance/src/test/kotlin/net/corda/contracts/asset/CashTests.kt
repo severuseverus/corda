@@ -52,7 +52,7 @@ class CashTests : TestDependencyInjectionBase() {
     fun setUp() {
         LogHelper.setLevel(NodeVaultService::class)
         val dataSourceProps = makeTestDataSourceProperties()
-        database = configureDatabase(dataSourceProps, makeTestDatabaseProperties())
+        database = configureDatabase(dataSourceProps,  databaseProperties = makeTestDatabaseProperties())
         database.transaction {
             miniCorpServices = object : MockServices(MINI_CORP_KEY) {
                 override val keyManagementService: MockKeyManagementService = MockKeyManagementService(identityService, MINI_CORP_KEY, MEGA_CORP_KEY, OUR_KEY)

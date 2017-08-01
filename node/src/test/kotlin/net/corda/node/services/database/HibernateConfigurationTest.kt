@@ -62,7 +62,7 @@ class HibernateConfigurationTest : TestDependencyInjectionBase() {
     fun setUp() {
         val dataSourceProps = makeTestDataSourceProperties()
         val defaultDatabaseProperties = makeTestDatabaseProperties()
-        database = configureDatabase(dataSourceProps, defaultDatabaseProperties)
+        database = configureDatabase(dataSourceProps, databaseProperties = defaultDatabaseProperties)
         val customSchemas = setOf(VaultSchemaV1, CashSchemaV1, SampleCashSchemaV2, SampleCashSchemaV3)
 
         database.transaction {

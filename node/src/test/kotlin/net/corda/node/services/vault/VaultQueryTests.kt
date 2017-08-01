@@ -57,7 +57,7 @@ class VaultQueryTests : TestDependencyInjectionBase() {
     @Before
     fun setUp() {
         val dataSourceProps = makeTestDataSourceProperties()
-        database = configureDatabase(dataSourceProps, makeTestDatabaseProperties())
+        database = configureDatabase(dataSourceProps, databaseProperties = makeTestDatabaseProperties())
         database.transaction {
             val customSchemas = setOf(CommercialPaperSchemaV1, DummyLinearStateSchemaV1)
             val hibernateConfig = HibernateConfiguration(NodeSchemaService(customSchemas), makeTestDatabaseProperties())
@@ -87,7 +87,7 @@ class VaultQueryTests : TestDependencyInjectionBase() {
     @Ignore
     @Test
     fun createPersistentTestDb() {
-        val database = configureDatabase(makePersistentDataSourceProperties(), makeTestDatabaseProperties())
+        val database = configureDatabase(makePersistentDataSourceProperties(), databaseProperties = makeTestDatabaseProperties())
 
         setUpDb(database, 5000)
 
