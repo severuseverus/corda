@@ -232,7 +232,7 @@ class CommercialPaperTestsGeneric {
         }
 
         val dataSourcePropsBigCorp = makeTestDataSourceProperties()
-        val databaseBigCorp = configureDatabase(dataSourcePropsBigCorp, databaseProperties = makeTestDatabaseProperties())
+        val databaseBigCorp = configureDatabase(dataSourcePropsBigCorp, makeTestDatabaseProperties())
         databaseBigCorp.transaction {
 
             bigCorpServices = object : MockServices(BIG_CORP_KEY) {
