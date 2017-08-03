@@ -41,6 +41,7 @@ sealed class QueryCriteria {
                                                              val stateRefs: List<StateRef>? = null,
                                                              val notaryName: List<X500Name>? = null,
                                                              val includeSoftlockedStates: Boolean = true,
+                                                             val includeStatesWithLockId: UUID? = null,
                                                              val timeCondition: TimeCondition? = null) : CommonQueryCriteria() {
         override fun visit(parser: IQueryCriteriaParser): Collection<Predicate> {
             return parser.parseCriteria(this as CommonQueryCriteria).plus(parser.parseCriteria(this))

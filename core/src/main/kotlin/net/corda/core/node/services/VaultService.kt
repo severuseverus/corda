@@ -5,18 +5,13 @@ import com.google.common.util.concurrent.ListenableFuture
 import net.corda.core.contracts.*
 import net.corda.core.crypto.SecureHash
 import net.corda.core.flows.FlowException
-import net.corda.core.identity.AbstractParty
-import net.corda.core.identity.Party
-import net.corda.core.messaging.DataFeed
+import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.serialization.CordaSerializable
 import net.corda.core.toFuture
 import net.corda.core.transactions.CoreTransaction
-import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.NonEmptySet
-import net.corda.core.utilities.OpaqueBytes
 import rx.Observable
 import rx.subjects.PublishSubject
-import java.security.PublicKey
 import java.time.Instant
 import java.util.*
 
@@ -224,29 +219,7 @@ interface VaultService {
 
     fun getTransactionNotes(txnId: SecureHash): Iterable<String>
 
-    /**
-     * Generate a transaction that moves an amount of currency to the given pubkey.
-     *
-     * Note: an [Amount] of [Currency] is only fungible for a given Issuer Party within a [FungibleAsset]
-     *
-     * @param tx A builder, which may contain inputs, outputs and commands already. The relevant components needed
-     *           to move the cash will be added on top.
-     * @param amount How much currency to send.
-     * @param to a key of the recipient.
-     * @param onlyFromParties if non-null, the asset states will be filtered to only include those issued by the set
-     *                        of given parties. This can be useful if the party you're trying to pay has expectations
-     *                        about which type of asset claims they are willing to accept.
-     * @return A [Pair] of the same transaction builder passed in as [tx], and the list of keys that need to sign
-     *         the resulting transaction for it to be valid.
-     * @throws InsufficientBalanceException when a cash spending transaction fails because
-     *         there is insufficient quantity for a given currency (and optionally set of Issuer Parties).
-     */
-    @Throws(InsufficientBalanceException::class)
-    @Suspendable
-    fun generateSpend(tx: TransactionBuilder,
-                      amount: Amount<Currency>,
-                      to: AbstractParty,
-                      onlyFromParties: Set<AbstractParty>? = null): Pair<TransactionBuilder, List<PublicKey>>
+    // DOCEND VaultStatesQuery
 
     /**
      * Soft locking is used to prevent multiple transactions trying to use the same output simultaneously.
@@ -282,17 +255,16 @@ interface VaultService {
 
     // DOCEND SoftLockAPI
 
-    /**
-     * TODO: this function should be private to the vault, but currently Cash Exit functionality
-     * is implemented in a separate module (finance) and requires access to it.
-     */
+    data class StatesForSpendingResult<T : FungibleAsset<U>, U : Any>(val states: List<StateAndRef<T>>, val locked: Boolean, val requestedAmount: Amount<U>, val foundAmount: Amount<U>)
+
     @Suspendable
-    fun <T : ContractState> unconsumedStatesForSpending(amount: Amount<Currency>,
-                                                        onlyFromIssuerParties: Set<AbstractParty>? = null,
-                                                        notary: Party? = null,
-                                                        lockId: UUID,
-                                                        withIssuerRefs: Set<OpaqueBytes>? = null): List<StateAndRef<T>>
+    fun <T : FungibleAsset<U>, U : Any> tryLockFungibleStatesForSpending(lockId: UUID,
+                                                                         eligibleStatesQuery: QueryCriteria,
+                                                                         amount: Amount<U>,
+                                                                         contractType: Class<out T>): StatesForSpendingResult<T, U>
+
 }
+
 
 class StatesNotAvailableException(override val message: String?, override val cause: Throwable? = null) : FlowException(message, cause) {
     override fun toString() = "Soft locking error: $message"

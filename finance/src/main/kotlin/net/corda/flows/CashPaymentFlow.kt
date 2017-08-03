@@ -1,6 +1,7 @@
 package net.corda.flows
 
 import co.paralleluniverse.fibers.Suspendable
+import net.corda.contracts.asset.Cash
 import net.corda.core.contracts.Amount
 import net.corda.core.contracts.InsufficientBalanceException
 import net.corda.core.flows.StartableByRPC
@@ -45,7 +46,7 @@ open class CashPaymentFlow(
         val builder: TransactionBuilder = TransactionBuilder(null as Party?)
         // TODO: Have some way of restricting this to states the caller controls
         val (spendTX, keysForSigning) = try {
-            serviceHub.vaultService.generateSpend(
+            Cash.generateSpend(serviceHub,
                     builder,
                     amount,
                     anonymousRecipient,

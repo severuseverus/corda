@@ -9,16 +9,17 @@ import net.corda.core.identity.Party
 import net.corda.core.node.services.VaultQueryService
 import net.corda.core.node.services.VaultService
 import net.corda.core.node.services.queryBy
-import net.corda.core.utilities.OpaqueBytes
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.transactions.WireTransaction
+import net.corda.core.utilities.OpaqueBytes
 import net.corda.node.services.database.HibernateConfiguration
 import net.corda.node.services.schema.NodeSchemaService
 import net.corda.node.services.vault.HibernateVaultQueryImpl
 import net.corda.node.services.vault.NodeVaultService
 import net.corda.node.utilities.CordaPersistence
 import net.corda.node.utilities.configureDatabase
+import net.corda.schemas.CommercialPaperSchemaV1
 import net.corda.testing.*
 import net.corda.testing.contracts.DummyState
 import net.corda.testing.contracts.fillWithSomeTestCash
@@ -26,6 +27,8 @@ import net.corda.testing.node.MockKeyManagementService
 import net.corda.testing.node.MockServices
 import net.corda.testing.node.makeTestDataSourceProperties
 import net.corda.testing.node.makeTestDatabaseProperties
+import net.corda.testing.schemas.DummyLinearStateSchemaV1
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.security.KeyPair
@@ -56,9 +59,11 @@ class CashTests : TestDependencyInjectionBase() {
     fun setUp() {
         LogHelper.setLevel(NodeVaultService::class)
         val dataSourceProps = makeTestDataSourceProperties()
-        database = configureDatabase(dataSourceProps, makeTestDatabaseProperties())
+        val databaseProperties = makeTestDatabaseProperties()
+        database = configureDatabase(dataSourceProps, databaseProperties)
         database.transaction {
-            val hibernateConfig = HibernateConfiguration(NodeSchemaService(), makeTestDatabaseProperties())
+            val customSchemas = setOf(CommercialPaperSchemaV1, DummyLinearStateSchemaV1)
+            val hibernateConfig = HibernateConfiguration(NodeSchemaService(customSchemas), databaseProperties)
             miniCorpServices = object : MockServices(MINI_CORP_KEY) {
                 override val keyManagementService: MockKeyManagementService = MockKeyManagementService(identityService, MINI_CORP_KEY, MEGA_CORP_KEY, OUR_KEY)
                 override val vaultService: VaultService = makeVaultService(dataSourceProps)
@@ -70,7 +75,10 @@ class CashTests : TestDependencyInjectionBase() {
                     // Refactored to use notifyAll() as we have no other unit test for that method with multiple transactions.
                     vaultService.notifyAll(txs.map { it.tx })
                 }
-                override val vaultQueryService : VaultQueryService = HibernateVaultQueryImpl(hibernateConfig, vaultService.updatesPublisher)
+
+                override val vaultQueryService: VaultQueryService = HibernateVaultQueryImpl(hibernateConfig, vaultService.updatesPublisher)
+
+                override fun jdbcSession() = database.createSession()
             }
 
             miniCorpServices.fillWithSomeTestCash(howMuch = 100.DOLLARS, atLeastThisManyStates = 1, atMostThisManyStates = 1,
@@ -85,6 +93,11 @@ class CashTests : TestDependencyInjectionBase() {
             vaultStatesUnconsumed = miniCorpServices.vaultQueryService.queryBy<Cash.State>().states
         }
         resetTestSerialization()
+    }
+
+    @After
+    fun tearDown() {
+        database.close()
     }
 
     @Test
@@ -492,7 +505,7 @@ class CashTests : TestDependencyInjectionBase() {
     fun makeSpend(amount: Amount<Currency>, dest: AbstractParty): WireTransaction {
         val tx = TransactionBuilder(DUMMY_NOTARY)
         database.transaction {
-            vault.generateSpend(tx, amount, dest)
+            Cash.generateSpend(miniCorpServices, tx, amount, dest)
         }
         return tx.toWireTransaction()
     }
@@ -593,7 +606,7 @@ class CashTests : TestDependencyInjectionBase() {
         database.transaction {
 
             val tx = TransactionBuilder(DUMMY_NOTARY)
-            vault.generateSpend(tx, 80.DOLLARS, ALICE, setOf(MINI_CORP))
+            Cash.generateSpend(miniCorpServices, tx, 80.DOLLARS, ALICE, setOf(MINI_CORP))
 
             assertEquals(vaultStatesUnconsumed.elementAt(2).ref, tx.inputStates()[0])
         }

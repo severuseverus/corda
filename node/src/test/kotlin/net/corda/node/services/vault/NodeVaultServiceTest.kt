@@ -1,17 +1,18 @@
 package net.corda.node.services.vault
 
+import co.paralleluniverse.fibers.Suspendable
 import net.corda.contracts.asset.Cash
 import net.corda.contracts.asset.DUMMY_CASH_ISSUER
+import net.corda.contracts.asset.sumCash
 import net.corda.contracts.getCashBalance
 import net.corda.core.contracts.*
 import net.corda.core.crypto.generateKeyPair
 import net.corda.core.crypto.sign
+import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.AnonymousParty
-import net.corda.core.node.services.StatesNotAvailableException
-import net.corda.core.node.services.Vault
-import net.corda.core.node.services.VaultQueryService
-import net.corda.core.node.services.VaultService
-import net.corda.core.node.services.queryBy
+import net.corda.core.identity.Party
+import net.corda.core.node.services.*
+import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.node.services.vault.QueryCriteria.VaultQueryCriteria
 import net.corda.core.transactions.NotaryChangeWireTransaction
 import net.corda.core.transactions.SignedTransaction
@@ -34,6 +35,8 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import rx.observers.TestSubscriber
+import java.math.BigDecimal
+import java.sql.Connection
 import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -65,6 +68,8 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
                     vaultService.notifyAll(txs.map { it.tx })
                 }
                 override val vaultQueryService : VaultQueryService = HibernateVaultQueryImpl(hibernateConfig, vaultService.updatesPublisher)
+
+                override fun jdbcSession(): Connection = database.createSession()
             }
         }
     }
@@ -74,6 +79,25 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
         database.close()
         LogHelper.reset(NodeVaultService::class)
     }
+
+    @Suspendable
+    private fun VaultService.unconsumedCashStatesForSpending(amount: Amount<Currency>,
+                                                             onlyFromIssuerParties: Set<AbstractParty>? = null,
+                                                             notary: Party? = null,
+                                                             lockId: UUID = UUID.randomUUID(),
+                                                             withIssuerRefs: Set<OpaqueBytes>? = null): VaultService.StatesForSpendingResult<Cash.State, Currency> {
+
+        val notaryName = if (notary != null) listOf(notary.name) else null
+        var baseCriteria: QueryCriteria = QueryCriteria.VaultQueryCriteria(notaryName = notaryName)
+        if (onlyFromIssuerParties != null || withIssuerRefs != null) {
+            baseCriteria = baseCriteria.and(QueryCriteria.FungibleAssetQueryCriteria(
+                    issuerPartyName = onlyFromIssuerParties?.toList(),
+                    issuerRef = withIssuerRefs?.toList()))
+        }
+
+        return tryLockFungibleStatesForSpending(lockId, baseCriteria, amount, Cash.State::class.java)
+    }
+
 
     @Test
     fun `states not local to instance`() {
@@ -303,7 +327,7 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
             val unconsumedStates = vaultQuery.queryBy<Cash.State>().states
             assertThat(unconsumedStates).hasSize(1)
 
-            val spendableStatesUSD = (vaultSvc as NodeVaultService).unconsumedStatesForSpending<Cash.State>(100.DOLLARS, lockId = UUID.randomUUID())
+            val spendableStatesUSD = vaultSvc.unconsumedCashStatesForSpending(100.DOLLARS).states
             spendableStatesUSD.forEach(::println)
             assertThat(spendableStatesUSD).hasSize(1)
             assertThat(spendableStatesUSD[0].state.data.amount.quantity).isEqualTo(100L * 100)
@@ -318,12 +342,13 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
             services.fillWithSomeTestCash(100.DOLLARS, DUMMY_NOTARY, 1, 1, Random(0L), issuedBy = (DUMMY_CASH_ISSUER))
             services.fillWithSomeTestCash(100.DOLLARS, DUMMY_NOTARY, 1, 1, Random(0L), issuedBy = (BOC.ref(1)), issuerKey = BOC_KEY)
 
-            val spendableStatesUSD = vaultSvc.unconsumedStatesForSpending<Cash.State>(200.DOLLARS, lockId = UUID.randomUUID(),
-                    onlyFromIssuerParties = setOf(DUMMY_CASH_ISSUER.party, BOC)).toList()
+            val spendableStatesUSD = vaultSvc.unconsumedCashStatesForSpending(200.DOLLARS,
+                    onlyFromIssuerParties = setOf(DUMMY_CASH_ISSUER.party, BOC)).states
             spendableStatesUSD.forEach(::println)
             assertThat(spendableStatesUSD).hasSize(2)
-            assertThat(spendableStatesUSD[0].state.data.amount.token.issuer).isEqualTo(DUMMY_CASH_ISSUER)
-            assertThat(spendableStatesUSD[1].state.data.amount.token.issuer).isEqualTo(BOC.ref(1))
+            assertThat(spendableStatesUSD[0].state.data.amount.token.issuer).isIn(DUMMY_CASH_ISSUER, BOC.ref(1))
+            assertThat(spendableStatesUSD[1].state.data.amount.token.issuer).isIn(DUMMY_CASH_ISSUER, BOC.ref(1))
+            assertThat(spendableStatesUSD[0].state.data.amount.token.issuer).isNotEqualTo(spendableStatesUSD[1].state.data.amount.token.issuer)
         }
     }
 
@@ -339,12 +364,13 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
             val unconsumedStates = vaultQuery.queryBy<Cash.State>().states
             assertThat(unconsumedStates).hasSize(4)
 
-            val spendableStatesUSD = vaultSvc.unconsumedStatesForSpending<Cash.State>(200.DOLLARS, lockId = UUID.randomUUID(),
-                    onlyFromIssuerParties = setOf(BOC), withIssuerRefs = setOf(OpaqueBytes.of(1), OpaqueBytes.of(2))).toList()
+            val spendableStatesUSD = vaultSvc.unconsumedCashStatesForSpending(200.DOLLARS,
+                    onlyFromIssuerParties = setOf(BOC), withIssuerRefs = setOf(OpaqueBytes.of(1), OpaqueBytes.of(2))).states
             assertThat(spendableStatesUSD).hasSize(2)
             assertThat(spendableStatesUSD[0].state.data.amount.token.issuer.party).isEqualTo(BOC)
-            assertThat(spendableStatesUSD[0].state.data.amount.token.issuer.reference).isEqualTo(BOC.ref(1).reference)
-            assertThat(spendableStatesUSD[1].state.data.amount.token.issuer.reference).isEqualTo(BOC.ref(2).reference)
+            assertThat(spendableStatesUSD[0].state.data.amount.token.issuer.reference).isIn(BOC.ref(1).reference, BOC.ref(2).reference)
+            assertThat(spendableStatesUSD[1].state.data.amount.token.issuer.reference).isIn(BOC.ref(1).reference, BOC.ref(2).reference)
+            assertThat(spendableStatesUSD[0].state.data.amount.token.issuer.reference).isNotEqualTo(spendableStatesUSD[1].state.data.amount.token.issuer.reference)
         }
     }
 
@@ -357,7 +383,7 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
             val unconsumedStates = vaultQuery.queryBy<Cash.State>().states
             assertThat(unconsumedStates).hasSize(1)
 
-            val spendableStatesUSD = (vaultSvc as NodeVaultService).unconsumedStatesForSpending<Cash.State>(110.DOLLARS, lockId = UUID.randomUUID())
+            val spendableStatesUSD = vaultSvc.unconsumedCashStatesForSpending(110.DOLLARS).states
             spendableStatesUSD.forEach(::println)
             assertThat(spendableStatesUSD).hasSize(1)
             assertThat(vaultSvc.softLockedStates<Cash.State>()).hasSize(0)
@@ -373,7 +399,7 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
             val unconsumedStates = vaultQuery.queryBy<Cash.State>().states
             assertThat(unconsumedStates).hasSize(2)
 
-            val spendableStatesUSD = (vaultSvc as NodeVaultService).unconsumedStatesForSpending<Cash.State>(1.DOLLARS, lockId = UUID.randomUUID())
+            val spendableStatesUSD = vaultSvc.unconsumedCashStatesForSpending(1.DOLLARS).states
             spendableStatesUSD.forEach(::println)
             assertThat(spendableStatesUSD).hasSize(1)
             assertThat(spendableStatesUSD[0].state.data.amount.quantity).isGreaterThanOrEqualTo(100L)
@@ -389,15 +415,25 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
             services.fillWithSomeTestCash(100.POUNDS, DUMMY_NOTARY, 10, 10, Random(0L))
             services.fillWithSomeTestCash(100.SWISS_FRANCS, DUMMY_NOTARY, 10, 10, Random(0L))
 
+            var unlockedStates = 30
             val allStates = vaultQuery.queryBy<Cash.State>().states
-            assertThat(allStates).hasSize(30)
+            assertThat(allStates).hasSize(unlockedStates)
 
             for (i in 1..5) {
-                val spendableStatesUSD = (vaultSvc as NodeVaultService).unconsumedStatesForSpending<Cash.State>(20.DOLLARS, lockId = UUID.randomUUID())
-                spendableStatesUSD.forEach(::println)
+                val lockId = UUID.randomUUID()
+                val spendableStatesUSD = vaultSvc.unconsumedCashStatesForSpending(20.DOLLARS, lockId = lockId)
+                spendableStatesUSD.states.forEach(::println)
+                assertThat(spendableStatesUSD.states.size <= unlockedStates)
+                unlockedStates -= spendableStatesUSD.states.size
+                val lockedStates = vaultSvc.softLockedStates<Cash.State>(lockId)
+                if (spendableStatesUSD.locked) {
+                    assertEquals(spendableStatesUSD.states.size, lockedStates.size)
+                    val lockedTotal = lockedStates.map { it.state.data }.sumCash()
+                    assertThat(spendableStatesUSD.foundAmount.toDecimal() >= BigDecimal("20.00"))
+                    assertThat(lockedTotal == spendableStatesUSD.foundAmount)
+                }
             }
-            // note only 3 spend attempts succeed with a total of 8 states
-            assertThat(vaultSvc.softLockedStates<Cash.State>()).hasSize(8)
+
         }
     }
 
@@ -475,7 +511,7 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
 
         database.transaction {
             val moveTx = TransactionBuilder(services.myInfo.legalIdentity).apply {
-                service.generateSpend(this, Amount(1000, GBP), thirdPartyIdentity)
+                Cash.generateSpend(services, this, Amount(1000, GBP), thirdPartyIdentity)
             }.toWireTransaction()
             service.notify(moveTx)
         }
@@ -521,7 +557,7 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
         // Move cash
         val moveTx = database.transaction {
             TransactionBuilder(newNotary).apply {
-                service.generateSpend(this, Amount(1000, GBP), thirdPartyIdentity)
+                Cash.generateSpend(services, this, Amount(1000, GBP), thirdPartyIdentity)
             }.toWireTransaction()
         }
 
