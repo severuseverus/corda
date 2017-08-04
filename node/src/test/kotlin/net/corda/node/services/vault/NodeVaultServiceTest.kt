@@ -496,12 +496,12 @@ class NodeVaultServiceTest : TestDependencyInjectionBase() {
         // Issue some cash
         val issueTxBuilder = TransactionBuilder(notary).apply {
             Cash().generateIssue(this, amount, anonymousIdentity.party, notary)
+            signWith(BOC_KEY)
         }
-
         // We need to record the issue transaction so inputs can be resolved for the notary change transaction
-        services.validatedTransactions.addTransaction(services.signInitialTransaction(issueTxBuilder, BOB_PUBKEY))
-        val issueTx = issueTxBuilder.toWireTransaction()
+        services.validatedTransactions.addTransaction(issueTxBuilder.toSignedTransaction())
 
+        val issueTx = issueTxBuilder.toWireTransaction()
         val initialCashState = StateAndRef(issueTx.outputs.single(), StateRef(issueTx.id, 0))
 
         // Change notary
