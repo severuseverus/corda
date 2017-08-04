@@ -2,6 +2,7 @@ package net.corda.node.services.vault
 
 import net.corda.contracts.asset.Cash
 import net.corda.contracts.asset.DUMMY_CASH_ISSUER
+import net.corda.contracts.asset.DUMMY_CASH_ISSUER_KEY
 import net.corda.contracts.getCashBalance
 import net.corda.core.contracts.*
 import net.corda.core.identity.AnonymousParty
@@ -35,6 +36,7 @@ import kotlin.test.assertEquals
 
 class VaultWithCashTest : TestDependencyInjectionBase() {
     lateinit var services: MockServices
+    lateinit var issuerServices: MockServices
     val vault: VaultService get() = services.vaultService
     val vaultQuery: VaultQueryService get() = services.vaultQueryService
     lateinit var database: CordaPersistence
@@ -43,11 +45,12 @@ class VaultWithCashTest : TestDependencyInjectionBase() {
     @Before
     fun setUp() {
         LogHelper.setLevel(VaultWithCashTest::class)
+        issuerServices = MockServices(DUMMY_CASH_ISSUER_KEY)
         val dataSourceProps = makeTestDataSourceProperties()
         database = configureDatabase(dataSourceProps, makeTestDatabaseProperties())
         database.transaction {
             val hibernateConfig = HibernateConfiguration(NodeSchemaService(), makeTestDatabaseProperties())
-            services = object : MockServices() {
+            services = object : MockServices(DUMMY_NOTARY_KEY, MEGA_CORP_KEY) {
                 override val vaultService: VaultService = makeVaultService(dataSourceProps, hibernateConfig)
 
                 override fun recordTransactions(txs: Iterable<SignedTransaction>) {
@@ -72,7 +75,7 @@ class VaultWithCashTest : TestDependencyInjectionBase() {
     fun splits() {
         database.transaction {
             // Fix the PRNG so that we get the same splits every time.
-            services.fillWithSomeTestCash(100.DOLLARS, DUMMY_NOTARY, 3, 3, Random(0L))
+            services.fillWithSomeTestCash(100.DOLLARS, issuerServices, DUMMY_NOTARY, 3, 3, Random(0L), issuedBy = DUMMY_CASH_ISSUER)
 
             val w = vaultQuery.queryBy<Cash.State>().states
             assertEquals(3, w.size)
@@ -131,10 +134,8 @@ class VaultWithCashTest : TestDependencyInjectionBase() {
 
         database.transaction {
             // A tx that sends us money.
-            services.fillWithSomeTestCash(100.DOLLARS, DUMMY_NOTARY, 10, 10, Random(0L),
-                    issuedBy = MEGA_CORP.ref(1),
-                    issuerKey = MEGA_CORP_KEY,
-                    ownedBy = AnonymousParty(freshKey))
+            services.fillWithSomeTestCash(100.DOLLARS, issuerServices, DUMMY_NOTARY, 10, 10, Random(0L), ownedBy = AnonymousParty(freshKey),
+                    issuedBy = DUMMY_CASH_ISSUER)
             println("Cash balance: ${services.getCashBalance(USD)}")
 
             assertThat(vaultQuery.queryBy<Cash.State>().states).hasSize(10)
@@ -278,9 +279,9 @@ class VaultWithCashTest : TestDependencyInjectionBase() {
 
         val freshKey = services.keyManagementService.freshKey()
         database.transaction {
-            services.fillWithSomeTestCash(100.DOLLARS, DUMMY_NOTARY, 3, 3, Random(0L), ownedBy = AnonymousParty(freshKey))
-            services.fillWithSomeTestCash(100.SWISS_FRANCS, DUMMY_NOTARY, 2, 2, Random(0L))
-            services.fillWithSomeTestCash(100.POUNDS, DUMMY_NOTARY, 1, 1, Random(0L))
+            services.fillWithSomeTestCash(100.DOLLARS, issuerServices, DUMMY_NOTARY, 3, 3, Random(0L), ownedBy = AnonymousParty(freshKey))
+            services.fillWithSomeTestCash(100.SWISS_FRANCS, issuerServices, DUMMY_NOTARY, 2, 2, Random(0L))
+            services.fillWithSomeTestCash(100.POUNDS, issuerServices, DUMMY_NOTARY, 1, 1, Random(0L))
             val cash = vaultQuery.queryBy<Cash.State>().states
             cash.forEach { println(it.state.data.amount) }
 
